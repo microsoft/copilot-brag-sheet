@@ -97,12 +97,13 @@ test("renderMarkdown omits session log when opted out", () => {
   assert.doesNotMatch(output, /Session Activity Log/);
 });
 
-test("renderMarkdown omits entries without category from category sections", () => {
+test("renderMarkdown renders entries without category under Other section", () => {
   const output = renderMarkdown([
     { type: "entry", timestamp: "2025-01-08T10:00:00Z", summary: "No category", category: null, impact: null, repo: null }
   ]);
 
-  assert.doesNotMatch(output, /### /);
+  assert.match(output, /### 📌 Other/);
+  assert.match(output, /No category/);
 });
 
 test("renderMarkdown omits null repo and impact decorations", () => {

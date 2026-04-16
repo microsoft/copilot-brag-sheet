@@ -23,7 +23,7 @@ import { loadConfig, getAllCategoryIds, isValidCategory, buildUserContext } from
 import {
   writeRecord, readRecords, updateRecord, logError,
 } from "./lib/storage.mjs";
-import { backupToGit, ensureGitRepo } from "./lib/git-backup.mjs";
+import { backupToGit, ensureGitRepo, addRemote } from "./lib/git-backup.mjs";
 import {
   createSessionRecord, createEntryRecord,
   addFileToRecord, sanitize, dedupeArray,
@@ -194,7 +194,9 @@ const session = await joinSession({
         dataDir = detectDataDir();
         ensureDir(dataDir);
         config = loadConfig(dataDir);
-        gitConfig = config.git || detectGitConfig();
+        // Let env vars override config.json for backward compat
+        const envGitConfig = detectGitConfig();
+        gitConfig = envGitConfig.enabled ? envGitConfig : config.git;
         firstPromptCaptured = false;
 
         // Initialize git repo in data dir if enabled
@@ -207,7 +209,6 @@ const session = await joinSession({
               try {
                 const url = readFile(pendingFile, "utf8").trim();
                 if (url) {
-                  const { addRemote } = await import("./lib/git-backup.mjs");
                   await addRemote(dataDir, url);
                 }
                 unlinkSync(pendingFile);
@@ -255,7 +256,7 @@ const session = await joinSession({
         const userCtx = buildUserContext(config);
 
         // "brag" keyword detection
-        if (/\bbrag\b/i.test(input.prompt) && !/brag(?:ging|gart)/i.test(input.prompt)) {
+        if (/\bbrag\b/i.test(input.prompt)) {
           const bragContext = [
             "The user wants to save work to their brag sheet.",
             "Summarize what was accomplished and call the `save_to_brag_sheet` tool.",
@@ -296,7 +297,10 @@ const session = await joinSession({
         if (PR_TOOLS.has(toolName)) {
           const prInfo = extractPrInfo(toolName, toolArgs, toolResult);
           if (prInfo) {
-            sessionRecord.prsCreated = [...(sessionRecord.prsCreated || []), prInfo];
+            const existing = sessionRecord.prsCreated || [];
+            if (!existing.some(p => p.id === prInfo.id && p.repo === prInfo.repo)) {
+              sessionRecord.prsCreated = [...existing, prInfo];
+            }
             sessionRecord.significantActions = dedupeArray([
               ...sessionRecord.significantActions, "pr created",
             ]);
@@ -473,9 +477,12 @@ const session = await joinSession({
         try {
           ensureInitialized();
 
-          const records = readRecords(dataDir);
+          const weeks = args.weeks ?? 4;
+          const records = readRecords(dataDir, {
+            since: new Date(Date.now() - weeks * 7 * 86400000).toISOString(),
+          });
           const markdown = renderReviewSummary(records, {
-            weeks: args.weeks ?? 4,
+            weeks,
             config,
           });
           const result = markdown || "No entries found for the requested period.";

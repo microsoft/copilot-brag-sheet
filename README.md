@@ -1,11 +1,19 @@
 # Copilot Brag Sheet
 
-> Track work in the best way possible — you can always summarize later using AI.
+> Never lose track of what you shipped — auto-log every AI coding session.
 
-Auto-track your AI coding sessions into a structured work impact log. Zero dependencies, local-first, cross-platform.
+A [**brag sheet**](https://jvns.ca/blog/brag-documents/) is a running record of your accomplishments — so when review season arrives, you have receipts, not a blank page. This extension builds yours automatically.
 
 [![Node.js CI](https://github.com/vidhartbhatia/copilot-brag-sheet/actions/workflows/ci.yml/badge.svg)](https://github.com/vidhartbhatia/copilot-brag-sheet/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+## Why
+
+Most developers can't remember what they shipped last week, let alone last quarter. This [Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) extension silently records your work as you go — files edited, PRs created, git actions — so when it's time for a performance review, you have a complete, impact-framed log.
+
+**Zero dependencies. Local-first. Cross-platform.**
+
+> **Requires:** Node.js 18+, [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) (with active Copilot subscription)
 
 ## What It Does
 

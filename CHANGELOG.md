@@ -22,6 +22,9 @@ Complete rewrite with modular architecture, comprehensive testing, and cross-pla
 - **"brag" keyword detection** — prompts the agent to call `save_to_brag_sheet`
 - **Emergency shutdown saves** — captures session state on unexpected exit
 - **Orphan session recovery** — detects stale sessions from crashed processes
+- **Git version history** — opt-in auto-commit of work log data to a local git repo
+- **Git remote sync** — connect data dir to a private GitHub/ADO repo for cross-machine sync
+- **Install scripts** (`install.sh`, `install.ps1`) with interactive setup wizard (`bin/setup.mjs`)
 - **Cloud sync support** — `WORK_TRACKER_DIR` env var for OneDrive/Dropbox/iCloud
 - **107 tests** covering all modules and extension logic
 - **Zero runtime dependencies** — Node.js 18+ only
@@ -38,5 +41,4 @@ Complete rewrite with modular architecture, comprehensive testing, and cross-pla
 ### Removed
 
 - OneDrive auto-detection (use `WORK_TRACKER_DIR` instead)
-- Git backup feature (deferred to future release)
 - Inline Markdown editing (Markdown is now generated output only)

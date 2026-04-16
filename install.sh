@@ -19,8 +19,8 @@ echo -e "${BOLD}Installing $EXT_NAME...${NC}"
 echo ""
 
 # ── Checks ───────────────────────────────────────────────────────────────────
-command -v git  &>/dev/null || { echo "Error: git required" >&2; exit 1; }
-command -v node &>/dev/null || { echo "Error: Node.js 18+ required" >&2; exit 1; }
+command -v git  &>/dev/null || { echo "Error: git required — install from https://git-scm.com/downloads" >&2; exit 1; }
+command -v node &>/dev/null || { echo "Error: Node.js 18+ required — install from https://nodejs.org" >&2; exit 1; }
 
 NODE_MAJOR=$(node -e "process.stdout.write(String(process.versions.node.split('.')[0]))")
 [ "$NODE_MAJOR" -ge 18 ] 2>/dev/null || { echo "Error: Node.js 18+ required (found v$(node --version))" >&2; exit 1; }
@@ -28,11 +28,11 @@ NODE_MAJOR=$(node -e "process.stdout.write(String(process.versions.node.split('.
 # ── Install extension files ──────────────────────────────────────────────────
 [ -d "$TARGET_DIR" ] && rm -rf "$TARGET_DIR"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null)" && pwd 2>/dev/null || echo "")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" 2>/dev/null && pwd 2>/dev/null || echo "")
 
 if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/extension.mjs" ]; then
     mkdir -p "$TARGET_DIR/lib" "$TARGET_DIR/bin"
-    cp "$SCRIPT_DIR/extension.mjs" "$SCRIPT_DIR/package.json" "$TARGET_DIR/"
+    cp "$SCRIPT_DIR/extension.mjs" "$SCRIPT_DIR/package.json" "$SCRIPT_DIR/plugin.json" "$TARGET_DIR/"
     cp "$SCRIPT_DIR"/lib/*.mjs "$TARGET_DIR/lib/"
     cp "$SCRIPT_DIR"/bin/*.mjs "$TARGET_DIR/bin/"
 else
@@ -40,7 +40,8 @@ else
     rm -rf "$TARGET_DIR/.git" "$TARGET_DIR/.github" "$TARGET_DIR/test" \
            "$TARGET_DIR/docs" "$TARGET_DIR/AGENTS.md" "$TARGET_DIR/CONTRIBUTING.md" \
            "$TARGET_DIR/ROADMAP.md" "$TARGET_DIR/CODEOWNERS" "$TARGET_DIR/CHANGELOG.md" \
-           "$TARGET_DIR/CODE_OF_CONDUCT.md" "$TARGET_DIR/SECURITY.md"
+           "$TARGET_DIR/CODE_OF_CONDUCT.md" "$TARGET_DIR/SECURITY.md" \
+           "$TARGET_DIR/install.sh" "$TARGET_DIR/install.ps1"
 fi
 
 ok "Extension installed to $TARGET_DIR"

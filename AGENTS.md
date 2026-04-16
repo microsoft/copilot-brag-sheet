@@ -48,11 +48,12 @@ This is the Copilot CLI entrypoint. It must:
 
 ### Imports
 ```js
-import { detectDataDir, detectGitConfig, ensureDir } from './lib/paths.mjs';
-import { loadConfig } from './lib/config.mjs';
-import { writeRecord, readRecords, updateRecord } from './lib/storage.mjs';
-import { createSessionRecord, createEntryRecord } from './lib/records.mjs';
-import { renderMarkdown, resolveOutputPath } from './lib/render.mjs';
+import { detectDataDir, detectBragSheetPath, detectGitConfig, ensureDir } from './lib/paths.mjs';
+import { loadConfig, getAllCategoryIds, isValidCategory, buildUserContext } from './lib/config.mjs';
+import { writeRecord, readRecords, updateRecord, logError } from './lib/storage.mjs';
+import { backupToGit, ensureGitRepo, addRemote } from './lib/git-backup.mjs';
+import { createSessionRecord, createEntryRecord, addFileToRecord, sanitize, dedupeArray } from './lib/records.mjs';
+import { renderMarkdown, renderReviewSummary } from './lib/render.mjs';
 ```
 
 ### Hooks (registered in joinSession callback)

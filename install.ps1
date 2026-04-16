@@ -30,12 +30,12 @@ $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { $PWD.Path }
 
 if (Test-Path (Join-Path $ScriptDir "extension.mjs")) {
     New-Item -ItemType Directory -Path (Join-Path $TargetDir "lib"), (Join-Path $TargetDir "bin") -Force | Out-Null
-    Copy-Item (Join-Path $ScriptDir "extension.mjs"), (Join-Path $ScriptDir "package.json") $TargetDir
+    Copy-Item (Join-Path $ScriptDir "extension.mjs"), (Join-Path $ScriptDir "package.json"), (Join-Path $ScriptDir "plugin.json") $TargetDir
     Copy-Item (Join-Path $ScriptDir "lib" "*.mjs") (Join-Path $TargetDir "lib")
     Copy-Item (Join-Path $ScriptDir "bin" "*.mjs") (Join-Path $TargetDir "bin")
 } else {
     git clone --depth 1 --quiet $RepoUrl $TargetDir
-    foreach ($item in @(".git",".github","test","docs","AGENTS.md","CONTRIBUTING.md","ROADMAP.md","CODEOWNERS","CHANGELOG.md","CODE_OF_CONDUCT.md","SECURITY.md")) {
+    foreach ($item in @(".git",".github","test","docs","AGENTS.md","CONTRIBUTING.md","ROADMAP.md","CODEOWNERS","CHANGELOG.md","CODE_OF_CONDUCT.md","SECURITY.md","install.sh","install.ps1")) {
         $p = Join-Path $TargetDir $item
         if (Test-Path $p) { Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue }
     }

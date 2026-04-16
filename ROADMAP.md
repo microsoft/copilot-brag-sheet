@@ -2,9 +2,10 @@
 
 Prioritized by user impact. Contributions welcome — open an issue to discuss.
 
-## Priority 1 — v1 Parity & Discoverability
+## Priority 1 — Discoverability
 
-- [ ] **Git backup remote sync** — Connect data dir git repo to a remote (GitHub/ADO) for cross-machine sync
+- [x] **Git backup** — Opt-in auto-commit of work log to a git repo (`lib/git-backup.mjs`)
+- [x] **Git backup remote sync** — Connect data dir git repo to a remote (GitHub/ADO) for cross-machine sync
 - [ ] **Submit to awesome-copilot** — Get listed on [awesome-copilot.github.com](https://awesome-copilot.github.com) for discoverability
 - [ ] **npm publish** — Enable `npx copilot-brag-sheet` as an alternative install method
 
@@ -12,7 +13,6 @@ Prioritized by user impact. Contributions welcome — open an issue to discuss.
 
 ## Priority 3 — Features
 
-- [ ] **Git backup** — Opt-in auto-commit of work log to a git repo (`lib/git-backup.mjs`)
 - [ ] **Summary inference** — Auto-generate session summaries from context
 - [ ] **Date range filtering** — `review_brag_sheet` with custom date ranges (not just weeks)
 - [ ] **Export formats** — CSV and JSON export for work log data

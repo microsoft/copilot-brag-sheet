@@ -23,6 +23,12 @@ lib/
   storage.mjs        ← Atomic JSON read/write, record CRUD
   records.mjs        ← Record creation, sanitization, file tracking
   render.mjs         ← Markdown rendering
+  git-backup.mjs     ← Git version history and remote sync
+bin/
+  setup.mjs          ← Interactive setup wizard
+install.sh           ← macOS/Linux installer
+install.ps1          ← Windows installer
+plugin.json          ← Copilot CLI plugin manifest
 test/
   *.test.mjs         ← Tests using Node.js built-in test runner
 ```

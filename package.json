@@ -15,5 +15,5 @@
   "license": "MIT",
   "repository": { "type": "git", "url": "https://github.com/vidhartbhatia/copilot-brag-sheet" },
   "engines": { "node": ">=18.0.0" },
-  "files": ["extension.mjs", "lib/", "bin/", "package.json", "README.md", "LICENSE"]
+  "files": ["extension.mjs", "lib/", "bin/", "plugin.json", "package.json", "README.md", "LICENSE"]
 }

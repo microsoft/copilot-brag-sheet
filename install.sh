@@ -2,12 +2,12 @@
 # install.sh — Install copilot-brag-sheet extension
 #
 # Usage:
-#   curl -sL https://raw.githubusercontent.com/vidhartbhatia/copilot-brag-sheet/main/install.sh | bash
+#   curl -sL https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.sh | bash
 #   # or from cloned repo: ./install.sh
 
 set -euo pipefail
 
-REPO_URL="https://github.com/vidhartbhatia/copilot-brag-sheet.git"
+REPO_URL="https://github.com/microsoft/copilot-brag-sheet.git"
 EXT_NAME="copilot-brag-sheet"
 COPILOT_HOME="${COPILOT_HOME:-$HOME/.copilot}"
 TARGET_DIR="$COPILOT_HOME/extensions/$EXT_NAME"

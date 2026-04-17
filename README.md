@@ -4,7 +4,7 @@
 
 A [**brag sheet**](https://jvns.ca/blog/brag-documents/) is a running record of your accomplishments — so when review season arrives, you have receipts, not a blank page. This extension builds yours automatically.
 
-[![Node.js CI](https://github.com/vidhartbhatia/copilot-brag-sheet/actions/workflows/ci.yml/badge.svg)](https://github.com/vidhartbhatia/copilot-brag-sheet/actions/workflows/ci.yml)
+[![Node.js CI](https://github.com/microsoft/copilot-brag-sheet/actions/workflows/ci.yml/badge.svg)](https://github.com/microsoft/copilot-brag-sheet/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## Why
@@ -40,16 +40,16 @@ Plus three tools the agent can call on your behalf:
 
 ```bash
 # macOS / Linux
-curl -sL https://raw.githubusercontent.com/vidhartbhatia/copilot-brag-sheet/main/install.sh | bash
+curl -sL https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.sh | bash
 
 # Windows (PowerShell)
-irm https://raw.githubusercontent.com/vidhartbhatia/copilot-brag-sheet/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.ps1 | iex
 ```
 
 **Or clone and install (includes interactive setup wizard):**
 
 ```bash
-git clone https://github.com/vidhartbhatia/copilot-brag-sheet.git
+git clone https://github.com/microsoft/copilot-brag-sheet.git
 cd copilot-brag-sheet
 ./install.sh          # macOS/Linux
 # .\install.ps1       # Windows
@@ -388,10 +388,10 @@ Re-run the install script to update to the latest version:
 
 ```bash
 # macOS / Linux
-curl -sL https://raw.githubusercontent.com/vidhartbhatia/copilot-brag-sheet/main/install.sh | bash
+curl -sL https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.sh | bash
 
 # Windows (PowerShell)
-irm https://raw.githubusercontent.com/vidhartbhatia/copilot-brag-sheet/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.ps1 | iex
 ```
 
 Or if you cloned the repo:
@@ -423,7 +423,7 @@ Your data stays in the OS app-data directory — delete it manually if you want 
 ## Development
 
 ```bash
-git clone https://github.com/vidhartbhatia/copilot-brag-sheet.git
+git clone https://github.com/microsoft/copilot-brag-sheet.git
 cd copilot-brag-sheet
 npm test        # 107 tests, ~1s
 ```
@@ -432,4 +432,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
 ## License
 
-[MIT](LICENSE) © Vidhart Bhatia
+[MIT](LICENSE) © Microsoft Corporation

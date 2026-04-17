@@ -6,7 +6,7 @@
  * Zero dependencies, cross-platform (Windows/macOS/Linux), Node 18+.
  *
  * @license MIT
- * @see https://github.com/vidhartbhatia/copilot-brag-sheet
+ * @see https://github.com/microsoft/copilot-brag-sheet
  */
 
 import { joinSession } from "@github/copilot-sdk/extension";

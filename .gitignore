@@ -4,3 +4,4 @@ node_modules/
 errors.log
 .DS_Store
 Thumbs.db
+test-temp-config-*/

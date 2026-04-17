@@ -73,7 +73,7 @@ Log the significant ones to my brag sheet.
 ```
 
 ```
-Find PRs I authored in vidhartbhatia/copilot-brag-sheet and log them.
+Find PRs I authored in microsoft/copilot-brag-sheet and log them.
 ```
 
 ---

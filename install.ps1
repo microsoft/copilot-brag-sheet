@@ -2,13 +2,13 @@
 .SYNOPSIS
     Install copilot-brag-sheet extension.
 .NOTES
-    irm https://raw.githubusercontent.com/vidhartbhatia/copilot-brag-sheet/main/install.ps1 | iex
+    irm https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.ps1 | iex
     # or from cloned repo: .\install.ps1
 #>
 
 $ErrorActionPreference = "Stop"
 
-$RepoUrl   = "https://github.com/vidhartbhatia/copilot-brag-sheet.git"
+$RepoUrl   = "https://github.com/microsoft/copilot-brag-sheet.git"
 $ExtName   = "copilot-brag-sheet"
 $CopilotHome = if ($env:COPILOT_HOME) { $env:COPILOT_HOME } else { Join-Path $env:USERPROFILE ".copilot" }
 $TargetDir = Join-Path $CopilotHome "extensions" $ExtName

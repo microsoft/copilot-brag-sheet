@@ -11,9 +11,9 @@
     "test": "node --test"
   },
   "keywords": ["copilot", "cli", "extension", "brag-sheet", "work-tracker", "developer-tools", "performance-review", "ai-tools", "local-first", "github-copilot"],
-  "author": "Vidhart Bhatia",
+  "author": "Microsoft",
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/vidhartbhatia/copilot-brag-sheet" },
+  "repository": { "type": "git", "url": "https://github.com/microsoft/copilot-brag-sheet" },
   "engines": { "node": ">=18.0.0" },
   "files": ["extension.mjs", "lib/", "bin/", "plugin.json", "package.json", "README.md", "LICENSE"]
 }

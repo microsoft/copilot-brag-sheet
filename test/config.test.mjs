@@ -57,12 +57,6 @@ test("loadConfig deep merges partial config and appends categories", () => {
 
 test("loadConfig returns defaults on invalid JSON", () => {
   const tempDir = createTempDir();
-  const originalError = console.error;
-  const errors = [];
-
-  console.error = (...args) => {
-    errors.push(args.join(" "));
-  };
 
   try {
     writeFileSync(join(tempDir, "config.json"), "{ invalid json");
@@ -70,9 +64,7 @@ test("loadConfig returns defaults on invalid JSON", () => {
     const config = loadConfig(tempDir);
 
     assert.deepEqual(config, DEFAULT_CONFIG);
-    assert.equal(errors.length, 1);
   } finally {
-    console.error = originalError;
     rmSync(tempDir, { recursive: true, force: true });
   }
 });

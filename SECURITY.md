@@ -1,39 +1,35 @@
-# Security Policy
+<!-- BEGIN MICROSOFT SECURITY.MD V0.0.9 BLOCK -->
 
-## Data Privacy
+# Security
 
-**All data stays on your machine.** Copilot Brag Sheet:
+## Reporting Security Issues
 
-- Stores session records as local JSON files in your OS app-data directory
-- Never transmits data to any external service, API, or telemetry endpoint
-- Never sends data to Microsoft, GitHub, or any third party
-- Has zero runtime dependencies — no hidden network calls
-- Works entirely offline after installation
+**Please do not report security vulnerabilities through public GitHub issues.**
 
-Your work log is yours. Period.
+Instead, please report them to the Microsoft Security Response Center (MSRC) at [https://msrc.microsoft.com/create-report](https://msrc.microsoft.com/create-report).
 
-## Supported Versions
+If you prefer to submit without logging in, send email to [secure@microsoft.com](mailto:secure@microsoft.com). If possible, encrypt your message with our PGP key; please download it from the [Microsoft Security Response Center PGP Key page](https://aka.ms/security.md/msrc/pgp).
 
-| Version | Supported |
-|---------|-----------|
-| 1.x     | ✅        |
-| < 1.0   | ❌        |
+You should receive a response within 24 hours. If for some reason you do not, please follow up via email to ensure we received your original message.
 
-## Reporting a Vulnerability
+Please include the requested information listed below (as much as you can provide) to help us better understand the nature and scope of the possible issue:
 
-If you discover a security vulnerability, please report it responsibly:
+- Type of issue (e.g. buffer overflow, SQL injection, cross-site scripting, etc.)
+- Full paths of source file(s) related to the manifestation of the issue
+- The location of the affected source code (tag/branch/commit or direct URL)
+- Any special configuration required to reproduce the issue
+- Step-by-step instructions to reproduce the issue
+- Proof-of-concept or exploit code (if possible)
+- Impact of the issue, including how an attacker might exploit the issue
 
-1. **Do NOT open a public issue**
-2. Go to [Security Advisories](https://github.com/vidhartbhatia/copilot-brag-sheet/security/advisories/new)
-3. Click **"Report a vulnerability"**
-4. Provide details about the issue
+This information will help us triage your report more quickly.
 
-I'll respond within 7 days and work with you on a fix before any public disclosure.
+## Preferred Languages
 
-## Scope
+We prefer all communications to be in English.
 
-Since this extension runs locally with no network access, the primary security concerns are:
+## Policy
 
-- **Path traversal** — prevented via session ID validation (`/^[\w-]+$/`)
-- **File injection** — prevented via atomic writes and input sanitization
-- **Sensitive data in logs** — user controls what summaries they write; session data is auto-captured from the working directory only
+Microsoft follows the principle of [Coordinated Vulnerability Disclosure](https://aka.ms/security.md/cvd).
+
+<!-- END MICROSOFT SECURITY.MD V0.0.9 BLOCK -->

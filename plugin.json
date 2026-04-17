@@ -3,10 +3,15 @@
   "description": "Auto-track AI coding sessions into a structured work impact log. Zero dependencies, local-first.",
   "version": "1.0.0",
   "author": {
-    "name": "Vidhart Bhatia"
+    "name": "Microsoft",
+    "url": "https://www.microsoft.com"
   },
-  "homepage": "https://github.com/vidhartbhatia/copilot-brag-sheet",
-  "repository": "https://github.com/vidhartbhatia/copilot-brag-sheet",
+  "source": {
+    "source": "github",
+    "repo": "microsoft/copilot-brag-sheet"
+  },
+  "homepage": "https://github.com/microsoft/copilot-brag-sheet",
+  "repository": "https://github.com/microsoft/copilot-brag-sheet",
   "license": "MIT",
   "keywords": ["copilot-cli", "work-tracker", "brag-sheet", "impact-log", "developer-productivity", "local-first"]
 }

@@ -113,7 +113,7 @@ async function main() {
         writeFileSync(join(dataDir, "README.md"), [
           "# Work Log Data",
           "",
-          "Managed by [copilot-brag-sheet](https://github.com/vidhartbhatia/copilot-brag-sheet).",
+          "Managed by [copilot-brag-sheet](https://github.com/microsoft/copilot-brag-sheet).",
           "",
           "- `entries/` — Your saved work accomplishments",
           "- `config.json` — Your preferences",

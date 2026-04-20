@@ -28,7 +28,7 @@ NODE_MAJOR=$(node -e "process.stdout.write(String(process.versions.node.split('.
 # ── Install extension files ──────────────────────────────────────────────────
 [ -d "$TARGET_DIR" ] && rm -rf "$TARGET_DIR"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" 2>/dev/null && pwd 2>/dev/null || echo "")
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" 2>/dev/null && pwd 2>/dev/null || echo "")"
 
 if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/extension.mjs" ]; then
     mkdir -p "$TARGET_DIR/lib" "$TARGET_DIR/bin"

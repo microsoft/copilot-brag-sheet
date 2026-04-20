@@ -12,6 +12,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **PR template** — standardized pull request format
 - **Release process docs** — versioning and release steps in CONTRIBUTING.md
 
+### Changed
+
+- **Skill v1.1** — major SKILL.md enhancement based on multi-model analysis:
+  - Expanded frontmatter description with 25+ trigger phrases
+  - Quick Start table for instant mode selection
+  - Agent Behavior Rules (10 DOs/DON'Ts)
+  - Anti-Patterns table (8 common mistakes)
+  - Evidence Ladder (ranked evidence types)
+  - Output Contract (7 quality guarantees)
+  - Gotchas section (6 edge cases)
+  - Executable backfill commands (git log, gh pr list)
+
 ## [1.0.0] — 2025-04-14
 
 Complete rewrite with modular architecture, comprehensive testing, and cross-platform support.

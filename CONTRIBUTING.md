@@ -88,6 +88,40 @@ These are intentional constraints — please don't change them without discussio
 - All tests must pass (`npm test`)
 - Update CHANGELOG.md for user-visible changes
 - No new runtime dependencies
+- Direct pushes to `main` are blocked — all changes go through PRs
+
+## Release Process
+
+This project uses [Semantic Versioning](https://semver.org/) and automated GitHub Releases.
+
+### To release a new version:
+
+1. **Create a PR** with your changes:
+   - Update `version` in `package.json`
+   - Add a new section to `CHANGELOG.md` under `## [x.y.z] — YYYY-MM-DD`
+   - Follow [Keep a Changelog](https://keepachangelog.com/) format
+
+2. **Merge the PR** — CI runs tests across 3 OSes × 3 Node versions
+
+3. **Tag and push** (from an up-to-date `main`):
+   ```bash
+   git tag v1.2.0
+   git push origin v1.2.0
+   ```
+
+4. **Automated release** — the `release.yml` workflow:
+   - Runs the full test matrix
+   - Validates the tag version matches `package.json`
+   - Extracts release notes from `CHANGELOG.md`
+   - Creates a GitHub Release
+
+### Version bump guidelines
+
+| Change type | Version bump | Example |
+|-------------|-------------|---------|
+| Bug fixes, docs, polish | Patch (`1.0.x`) | Fix install.sh quoting |
+| New features, backward-compatible | Minor (`1.x.0`) | Add date range filtering |
+| Breaking changes | Major (`x.0.0`) | Change storage format |
 
 ## Reporting Issues
 

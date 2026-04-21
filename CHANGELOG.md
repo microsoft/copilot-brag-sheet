@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [1.0.1] — 2025-04-21
+
+### Fixed
+
+- **npm metadata** — repository URL now correctly points to `microsoft/copilot-brag-sheet`
+
 ### Added
 
 - **Release workflow** — automated GitHub Releases from version tags (`release.yml`)
@@ -14,14 +20,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Changed
 
-- **Skill v1.1** — major SKILL.md enhancement based on multi-model analysis:
+- **Skill v1.1** — major SKILL.md enhancement:
   - Expanded frontmatter description with 25+ trigger phrases
-  - Quick Start table for instant mode selection
-  - Agent Behavior Rules (10 DOs/DON'Ts)
-  - Anti-Patterns table (8 common mistakes)
-  - Evidence Ladder (ranked evidence types)
-  - Output Contract (7 quality guarantees)
-  - Gotchas section (6 edge cases)
+  - Quick Start table, Agent Behavior Rules, Anti-Patterns table
+  - Evidence Ladder, Output Contract, Gotchas section
   - Executable backfill commands (git log, gh pr list)
 
 ## [1.0.0] — 2025-04-14

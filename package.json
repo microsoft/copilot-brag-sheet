@@ -1,6 +1,6 @@
 {
   "name": "copilot-brag-sheet",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Auto-track AI coding sessions into a structured work log. Zero dependencies, local-first.",
   "type": "module",
   "main": "extension.mjs",
@@ -10,10 +10,34 @@
   "scripts": {
     "test": "node --test"
   },
-  "keywords": ["copilot", "cli", "extension", "brag-sheet", "work-tracker", "developer-tools", "performance-review", "ai-tools", "local-first", "github-copilot"],
+  "keywords": [
+    "copilot",
+    "cli",
+    "extension",
+    "brag-sheet",
+    "work-tracker",
+    "developer-tools",
+    "performance-review",
+    "ai-tools",
+    "local-first",
+    "github-copilot"
+  ],
   "author": "Microsoft",
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/microsoft/copilot-brag-sheet" },
-  "engines": { "node": ">=18.0.0" },
-  "files": ["extension.mjs", "lib/", "bin/", "plugin.json", "package.json", "README.md", "LICENSE"]
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/microsoft/copilot-brag-sheet"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "extension.mjs",
+    "lib/",
+    "bin/",
+    "plugin.json",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ]
 }

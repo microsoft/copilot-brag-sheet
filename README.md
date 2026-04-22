@@ -4,7 +4,7 @@
 
 A [**brag sheet**](https://jvns.ca/blog/brag-documents/) is a running record of your accomplishments — so when review season arrives, you have receipts, not a blank page. This extension builds yours automatically.
 
-[![CI](https://github.com/microsoft/copilot-brag-sheet/actions/workflows/ci.yml/badge.svg)](https://github.com/microsoft/copilot-brag-sheet/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/microsoft/copilot-brag-sheet/ci.yml?branch=main&label=CI)](https://github.com/microsoft/copilot-brag-sheet/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/copilot-brag-sheet.svg)](https://www.npmjs.com/package/copilot-brag-sheet)
 [![npm downloads](https://img.shields.io/npm/dm/copilot-brag-sheet.svg)](https://www.npmjs.com/package/copilot-brag-sheet)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)

@@ -8,6 +8,7 @@ A [**brag sheet**](https://jvns.ca/blog/brag-documents/) is a running record of 
 [![npm version](https://img.shields.io/npm/v/copilot-brag-sheet.svg)](https://www.npmjs.com/package/copilot-brag-sheet)
 [![npm downloads](https://img.shields.io/npm/dm/copilot-brag-sheet.svg)](https://www.npmjs.com/package/copilot-brag-sheet)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Awesome Copilot](https://img.shields.io/badge/Awesome-Copilot-blue?logo=github)](https://github.com/github/awesome-copilot)
 
 ## Why
 

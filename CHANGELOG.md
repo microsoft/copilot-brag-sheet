@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Added
+
+- **Awesome Copilot** — listed on [github/awesome-copilot](https://github.com/github/awesome-copilot) as an official community skill ([PR #1428](https://github.com/github/awesome-copilot/pull/1428))
+
 ## [1.0.1] — 2025-04-21
 
 ### Fixed

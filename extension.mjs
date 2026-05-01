@@ -30,6 +30,12 @@ import {
 } from "./lib/records.mjs";
 import { renderMarkdown, renderReviewSummary } from "./lib/render.mjs";
 
+// Debug: log to stderr at module load time so we can verify the host actually loaded us.
+// Gated on env var to avoid noise in normal sessions. Set BRAG_SHEET_DEBUG=1 to enable.
+if (process.env.BRAG_SHEET_DEBUG) {
+  process.stderr.write("[brag-sheet] extension module loaded\n");
+}
+
 // ── Module-level state (one session per extension process) ──────────────────
 
 let dataDir = null;
@@ -190,6 +196,9 @@ function detectShellGitAction(command) {
 const session = await joinSession({
   hooks: {
     onSessionStart: async (input, invocation) => {
+      if (process.env.BRAG_SHEET_DEBUG) {
+        process.stderr.write("[brag-sheet] onSessionStart called\n");
+      }
       try {
         dataDir = detectDataDir();
         ensureDir(dataDir);

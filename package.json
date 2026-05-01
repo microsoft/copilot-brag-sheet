@@ -1,6 +1,6 @@
 {
   "name": "copilot-brag-sheet",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Auto-track AI coding sessions into a structured work log. Zero dependencies, local-first.",
   "type": "module",
   "main": "extension.mjs",
@@ -9,7 +9,8 @@
     "copilot-brag-sheet-setup": "./bin/setup.mjs"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "prepublishOnly": "node --test"
   },
   "keywords": [
     "copilot",
@@ -31,6 +32,14 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "@github/copilot": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@github/copilot": {
+      "optional": true
+    }
   },
   "files": [
     "extension.mjs",

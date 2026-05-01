@@ -45,6 +45,23 @@ function git(args, cwd, { timeout: t = 5000 } = {}) {
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
+  // Setup wizard requires an interactive terminal — reading from a pipe or
+  // headless context (CI, Docker, npm scripts) would hang indefinitely on the
+  // first prompt. Detect early and exit with a clear message.
+  if (!process.stdin.isTTY) {
+    console.error("");
+    console.error("  setup requires an interactive terminal.");
+    console.error("  Run from a TTY, or set values directly in:");
+    try {
+      const dir = (await import(pathToFileURL(join(LIB_DIR, "paths.mjs")).href)).detectDataDir();
+      console.error(`    ${join(dir, "config.json")}`);
+    } catch {
+      console.error("    <data-dir>/config.json");
+    }
+    console.error("");
+    process.exit(2);
+  }
+
   process.on("SIGINT", () => {
     console.log("\n\n  Setup cancelled. Run again anytime to finish.\n");
     process.exit(130);

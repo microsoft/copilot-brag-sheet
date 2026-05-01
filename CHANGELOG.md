@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [1.0.3] — 2026-05-01
+
+### Fixed
+
+- **`plugin.json` version drift** — was hardcoded to `1.0.0` while `package.json` had moved to `1.0.2`. Removed the duplicate `version` field; `package.json` is now the single source of truth.
+- **`bin/setup.mjs` non-TTY hang** — calling the wizard headless (CI, Docker, `< /dev/null`) used to block forever on the first prompt. Now exits cleanly with code 2 and a helpful message pointing at `config.json`.
+- **README curl one-liner** — replaced `curl -sL` with `curl -fsSL` so HTTP errors fail loudly instead of piping HTML into bash.
+
+### Added
+
+- **`@github/copilot` declared as optional `peerDependency`** — extension imports `@github/copilot-sdk/extension` which the Copilot CLI host injects at load time. Declaring it (with `optional: true`) gives static-analysis tools and `depcheck` a hook without forcing install on end users.
+- **`copilot-brag-sheet-setup` bin** is now the recommended way to re-run the wizard (no more remembering the absolute path).
+- **`COPILOT_HOME` documented** in the README's Environment Variables section.
+- **`BRAG_SHEET_DEBUG=1` env var** — when set, `extension.mjs` logs to stderr at module load and `onSessionStart` so you can verify the host actually loaded the extension.
+- **README rewrite** — based on competitive analysis (claudskills.com is reposting our SKILL.md without attribution):
+  - Stronger hero hook ("Turn vague *what did I do?* into evidence-backed impact statements")
+  - New "**Why an extension, not just a SKILL.md?**" section that names the moat: deterministic capture, structured storage, typed tool contracts
+  - "**When the agent will use this**" section listing the trigger phrases
+- **CI: tarball validation** — `release.yml` now checks `npm pack --dry-run` against a required-files list before publishing. Catches future cases where a new `lib/foo.mjs` gets added but isn't in `package.json`'s `files` whitelist.
+- **`prepublishOnly` script** — runs `npm test` automatically on local `npm publish` to prevent accidental untested releases.
+
+### Changed
+
+- **ROADMAP.md restructured** — Priority 0 is now distribution + product moat (summary inference, blog post, SEO landing page, attribution reclaim) based on real traffic data (218 unique visitors / 53 cloners in 14 days from awesome-copilot). Cross-engine moved to Priority 1. Packaging polish moved to Priority 2.
+- **Removed dead code** in `bin/install.mjs` (`SKIP` set defined but never used; `pathToFileURL` imported then voided).
+
 ## [1.0.2] — 2026-05-01
 
 ### Fixed

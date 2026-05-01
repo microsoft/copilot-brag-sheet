@@ -17,7 +17,7 @@ import {
   readFileSync,
 } from "node:fs";
 import { join, dirname } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { spawnSync } from "node:child_process";
 
@@ -31,7 +31,6 @@ const TARGET_DIR = join(COPILOT_HOME, "extensions", "copilot-brag-sheet");
 // ── Helpers ─────────────────────────────────────────────────────────────────
 function green(s) { return `\x1b[32m${s}\x1b[0m`; }
 function bold(s) { return `\x1b[1m${s}\x1b[0m`; }
-function dim(s) { return `\x1b[2m${s}\x1b[0m`; }
 
 // ── Preflight ───────────────────────────────────────────────────────────────
 const nodeMajor = Number(process.versions.node.split(".")[0]);
@@ -58,13 +57,7 @@ if (existsSync(TARGET_DIR)) {
 }
 mkdirSync(TARGET_DIR, { recursive: true });
 
-// Copy package contents (excluding node_modules + .git + tests)
-const SKIP = new Set([
-  "node_modules", ".git", ".github", "test", "docs",
-  "AGENTS.md", "CONTRIBUTING.md", "ROADMAP.md", "CODEOWNERS",
-  "CHANGELOG.md", "CODE_OF_CONDUCT.md", "SECURITY.md",
-  "install.sh", "install.ps1",
-]);
+// Copy package contents — only what the extension needs at runtime
 for (const entry of REQUIRED) {
   cpSync(join(PKG_ROOT, entry), join(TARGET_DIR, entry), { recursive: true });
 }
@@ -90,11 +83,8 @@ if (process.stdin.isTTY && existsSync(setupScript)) {
   console.log(green(bold("🎉 Installed!")));
   console.log("");
   console.log("  Next steps:");
-  console.log(`    1. Run the setup wizard:  node ${setupScript}`);
+  console.log(`    1. Run the setup wizard:  copilot-brag-sheet-setup`);
   console.log("    2. Run /clear in Copilot CLI (or restart it)");
   console.log("    3. Say \"brag\" to save an accomplishment");
   console.log("");
 }
-
-// Silence unused import warning (kept for potential future use in setup-import)
-void pathToFileURL;

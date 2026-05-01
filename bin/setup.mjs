@@ -46,12 +46,14 @@ function git(args, cwd, { timeout: t = 5000 } = {}) {
 
 async function main() {
   // Setup wizard requires an interactive terminal — reading from a pipe or
-  // headless context (CI, Docker, npm scripts) would hang indefinitely on the
-  // first prompt. Detect early and exit with a clear message.
+  // headless context (CI, Docker, npm scripts, irm | iex) would hang
+  // indefinitely on the first prompt. Detect early and skip cleanly.
+  // Exit 0 (not an error) — setup is optional; install is already done.
   if (!process.stdin.isTTY) {
     console.error("");
-    console.error("  setup requires an interactive terminal.");
-    console.error("  Run from a TTY, or set values directly in:");
+    console.error("  Skipping interactive setup — no TTY detected.");
+    console.error("  Re-run from a terminal:  copilot-brag-sheet-setup");
+    console.error("  Or set values directly in:");
     try {
       const dir = (await import(pathToFileURL(join(LIB_DIR, "paths.mjs")).href)).detectDataDir();
       console.error(`    ${join(dir, "config.json")}`);
@@ -59,7 +61,7 @@ async function main() {
       console.error("    <data-dir>/config.json");
     }
     console.error("");
-    process.exit(2);
+    process.exit(0);
   }
 
   process.on("SIGINT", () => {

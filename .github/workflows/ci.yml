@@ -39,7 +39,7 @@ jobs:
         shell: bash
         env:
           COPILOT_HOME: ${{ runner.temp }}/copilot-home-test
-        run: ./install.sh
+        run: bash ./install.sh
       - name: Verify install layout
         shell: bash
         env:

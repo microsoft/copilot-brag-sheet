@@ -6,9 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [1.0.2] — 2026-05-01
+
+### Fixed
+
+- **Windows install** — `install.ps1` failed on Windows PowerShell 5.1 (default on Windows 10/11) because the `Join-Path` 3-argument form requires PowerShell 6+. Replaced with nested 2-argument calls so the script works on both PS 5.1 and PS 7+ ([#23](https://github.com/microsoft/copilot-brag-sheet/issues/23) follow-up)
+- **Setup wizard on Windows + Node 22+** — `bin/setup.mjs` failed with `ERR_UNSUPPORTED_ESM_URL_SCHEME` because dynamic `import()` requires `file://` URLs on Windows. Now uses `pathToFileURL()`.
+
 ### Added
 
-- **Awesome Copilot** — listed on [github/awesome-copilot](https://github.com/github/awesome-copilot) as an official community skill ([PR #1428](https://github.com/github/awesome-copilot/pull/1428))
+- **`npm install` install path** — new `bin/install.mjs` makes `npm install -g copilot-brag-sheet` followed by `copilot-brag-sheet` a fully working install path. Copies extension files to `~/.copilot/extensions/` and runs the setup wizard.
+- **`copilot-brag-sheet-setup` bin** — re-run the setup wizard anytime without remembering the absolute path.
+- **README demo GIF** — embedded terminal-only animation (`demo/demo.gif`) showing the brag → save → review flow.
+- **Awesome Copilot** — listed on [github/awesome-copilot](https://github.com/github/awesome-copilot) ([PR #1428](https://github.com/github/awesome-copilot/pull/1428)).
+- **CI: Windows install smoke test** — exercises `install.ps1` on Windows runners so this category of bug can't regress.
+- **README rewrite** — clearer install ranking (npm vs script), Microsoft-engineer hop link, trust ribbon, `copilot plugin install` warning hoisted from FAQ to install section, internals collapsed under `<details>`.
+
+### Changed
+
+- **Quick Start install section** — now ranks options as Recommended (script), Alternative (npm), and For contributors (clone) rather than presenting all three equally.
 
 ## [1.0.1] — 2025-04-21
 

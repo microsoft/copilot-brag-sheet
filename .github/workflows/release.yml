@@ -49,6 +49,53 @@ jobs:
             exit 1
           fi
 
+      - name: Validate tarball contents
+        run: |
+          # Required files that must be in the published tarball.
+          # If we add a new lib/foo.mjs and forget to update package.json's "files"
+          # whitelist, this catches it before the broken publish goes out.
+          REQUIRED=(
+            extension.mjs
+            plugin.json
+            package.json
+            bin/install.mjs
+            bin/setup.mjs
+            lib/config.mjs
+            lib/git-backup.mjs
+            lib/lock.mjs
+            lib/paths.mjs
+            lib/records.mjs
+            lib/render.mjs
+            lib/storage.mjs
+          )
+          npm pack --dry-run --json > /tmp/pack.json
+          node -e "
+            const required = process.env.REQUIRED.split('\n').filter(Boolean);
+            const pack = JSON.parse(require('fs').readFileSync('/tmp/pack.json', 'utf8'));
+            const got = new Set(pack[0].files.map(f => f.path));
+            const missing = required.filter(f => !got.has(f));
+            if (missing.length) {
+              console.error('::error::Missing in tarball:');
+              missing.forEach(f => console.error('  - ' + f));
+              process.exit(1);
+            }
+            console.log('Tarball contains all', required.length, 'required files.');
+          "
+        env:
+          REQUIRED: |
+            extension.mjs
+            plugin.json
+            package.json
+            bin/install.mjs
+            bin/setup.mjs
+            lib/config.mjs
+            lib/git-backup.mjs
+            lib/lock.mjs
+            lib/paths.mjs
+            lib/records.mjs
+            lib/render.mjs
+            lib/storage.mjs
+
       - name: Extract changelog for this version
         id: changelog
         run: |

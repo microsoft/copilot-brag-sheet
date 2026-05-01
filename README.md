@@ -1,6 +1,6 @@
 # Copilot Brag Sheet
 
-> Never lose track of what you shipped — auto-log every AI coding session.
+> **Turn vague "what did I do?" into evidence-backed impact statements** — automatically, every Copilot CLI session.
 
 ![demo](demo/demo.gif)
 
@@ -17,6 +17,21 @@ A [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-
 [![Awesome Copilot](https://img.shields.io/badge/Awesome-Copilot-blue?logo=github)](https://github.com/github/awesome-copilot)
 
 > **Requires:** Node.js 18+, [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) (with active Copilot subscription)
+
+## Why an extension, not just a SKILL.md?
+
+If you've seen the brag-sheet skill listed elsewhere — that's our [SKILL.md](skills/brag-sheet/SKILL.md), the LLM guidance file. It's a *prompt* that tells the agent how to think about your work. This repo ships the prompt **plus** the extension that makes it actually happen:
+
+| Just the SKILL.md | The full extension (this) |
+|---|---|
+| LLM has to remember the trigger | Auto-captures every session |
+| LLM runs shell commands by hand | Direct file/PR/git tracking via Node API |
+| LLM formats markdown each time | Deterministic, typed, crash-safe |
+| Markdown stored "somewhere" | Structured local JSON, atomic writes, orphan recovery |
+| Re-curl to update | `npm update` or one-line re-install |
+
+**Want just the prompt?** Use the skill — also published in [github/awesome-copilot](https://github.com/github/awesome-copilot).
+**Want it to actually happen automatically?** Install the extension below.
 
 ## What It Does
 
@@ -35,6 +50,14 @@ Plus three tools the agent can call on your behalf:
 | `review_brag_sheet` | Review recent entries for performance discussions |
 | `generate_work_log` | Render all records into a Markdown file |
 
+### When the agent will use this
+
+The agent picks up these tools when you say (anything close to) one of:
+
+> brag · log work · save accomplishment · what did I ship · review my work · summarize my impact · generate work log · prep my brag sheet · promo packet · perf review · Connect prep · self-review · weekly recap · monthly summary · what did I do this quarter
+
+You don't need to memorize the list — just talk naturally about your work and the agent will figure it out.
+
 ## Install (60 seconds)
 
 > ⚠️ **Don't use `copilot plugin install`.** This is a [`joinSession()`](https://docs.github.com/en/copilot/customizing-copilot/extending-copilot-with-mcp-and-extensions) extension and must live in `~/.copilot/extensions/`. Tracking [github/copilot-cli#3023](https://github.com/github/copilot-cli/issues/3023). Use one of the methods below.
@@ -43,7 +66,7 @@ Plus three tools the agent can call on your behalf:
 
 ```bash
 # macOS / Linux
-curl -sL https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.sh | bash
 
 # Windows (PowerShell 5.1+)
 irm https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.ps1 | iex
@@ -276,8 +299,10 @@ Default data directory:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `COPILOT_HOME` | `~/.copilot` | Override Copilot CLI's home dir (used by all install scripts to find/install the extension) |
 | `WORK_TRACKER_DIR` | OS app-data dir | Override the data storage directory |
 | `WORK_TRACKER_OUTPUT_PATH` | `<data-dir>/work-log.md` | Override the work log output path |
+| `BRAG_SHEET_DEBUG` | _(unset)_ | Set to `1` to log extension load events to stderr (useful for verifying the extension is hooked up) |
 
 ### config.json (optional)
 
@@ -411,7 +436,7 @@ Re-run the install script to update to the latest version:
 
 ```bash
 # macOS / Linux
-curl -sL https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.sh | bash
 
 # Windows (PowerShell)
 irm https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.ps1 | iex

@@ -19,3 +19,108 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm test
+
+  # End-to-end install smoke test — exercises install.sh / install.ps1 on
+  # every OS and (on Windows) on both PowerShell 5.1 and PowerShell 7+.
+  # PS 5.1 is the default on Windows 10/11 and is where the v1.0.1 install bug hid.
+  install-smoke-unix:
+    name: install-smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+      - name: Run install.sh
+        shell: bash
+        env:
+          COPILOT_HOME: ${{ runner.temp }}/copilot-home-test
+        run: bash ./install.sh
+      - name: Verify install layout
+        shell: bash
+        env:
+          COPILOT_HOME: ${{ runner.temp }}/copilot-home-test
+        run: |
+          target="$COPILOT_HOME/extensions/copilot-brag-sheet"
+          for f in extension.mjs lib/paths.mjs lib/storage.mjs bin/setup.mjs package.json; do
+            if [ ! -f "$target/$f" ]; then
+              echo "Missing: $f"
+              ls -laR "$target" || true
+              exit 1
+            fi
+          done
+          echo "All required files installed at $target"
+      - name: Verify npm install path (bin/install.mjs)
+        shell: bash
+        env:
+          COPILOT_HOME: ${{ runner.temp }}/copilot-home-npm-test
+        run: |
+          rm -rf "$COPILOT_HOME"
+          node bin/install.mjs < /dev/null
+          test -f "$COPILOT_HOME/extensions/copilot-brag-sheet/extension.mjs"
+          echo "npm install path works"
+
+  install-smoke-windows-ps51:
+    name: install-smoke (windows / PowerShell 5.1)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+      - name: Run install.ps1 in PowerShell 5.1
+        shell: powershell
+        env:
+          COPILOT_HOME: ${{ runner.temp }}\copilot-home-test
+        run: .\install.ps1
+      - name: Verify install layout
+        shell: bash
+        env:
+          COPILOT_HOME: ${{ runner.temp }}\copilot-home-test
+        run: |
+          target="$COPILOT_HOME/extensions/copilot-brag-sheet"
+          for f in extension.mjs lib/paths.mjs lib/storage.mjs bin/setup.mjs package.json; do
+            if [ ! -f "$target/$f" ]; then
+              echo "Missing: $f"; exit 1
+            fi
+          done
+          echo "All required files installed"
+
+  install-smoke-windows-pwsh:
+    name: install-smoke (windows / PowerShell 7+)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+      - name: Run install.ps1 in pwsh
+        shell: pwsh
+        env:
+          COPILOT_HOME: ${{ runner.temp }}\copilot-home-test
+        run: .\install.ps1
+      - name: Verify install layout
+        shell: bash
+        env:
+          COPILOT_HOME: ${{ runner.temp }}\copilot-home-test
+        run: |
+          target="$COPILOT_HOME/extensions/copilot-brag-sheet"
+          for f in extension.mjs lib/paths.mjs lib/storage.mjs bin/setup.mjs package.json; do
+            if [ ! -f "$target/$f" ]; then
+              echo "Missing: $f"; exit 1
+            fi
+          done
+          echo "All required files installed"
+      - name: Verify npm install path (bin/install.mjs)
+        shell: bash
+        env:
+          COPILOT_HOME: ${{ runner.temp }}\copilot-home-npm-test
+        run: |
+          rm -rf "$COPILOT_HOME"
+          node bin/install.mjs < /dev/null
+          test -f "$COPILOT_HOME/extensions/copilot-brag-sheet/extension.mjs"
+          echo "npm install path works"

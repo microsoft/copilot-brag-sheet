@@ -9,15 +9,16 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { createInterface } from "node:readline";
 import { execFileSync } from "node:child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LIB_DIR = join(__dirname, "..", "lib");
 
-// Import data dir detection from the extension's own lib (single source of truth)
-const { detectDataDir } = await import(join(LIB_DIR, "paths.mjs"));
+// Import data dir detection from the extension's own lib (single source of truth).
+// Use pathToFileURL — Node on Windows rejects raw absolute paths in dynamic import().
+const { detectDataDir } = await import(pathToFileURL(join(LIB_DIR, "paths.mjs")).href);
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 

@@ -2,19 +2,19 @@
 
 > Never lose track of what you shipped — auto-log every AI coding session.
 
-A [**brag sheet**](https://jvns.ca/blog/brag-documents/) is a running record of your accomplishments — so when review season arrives, you have receipts, not a blank page. This extension builds yours automatically.
+![demo](demo/demo.gif)
+
+**🔒 Local-first · 📦 Zero dependencies · 🚫 Zero telemetry**
+
+A [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) extension that silently records your work as you go — files edited, PRs created, git actions — so when performance review season hits, you have receipts instead of a blank page. ([What's a brag sheet?](https://jvns.ca/blog/brag-documents/))
+
+> 👋 **Microsoft engineer?** Jump to [Connect-optimized framing →](#microsoft-employees-connect--performance-reviews)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/microsoft/copilot-brag-sheet/ci.yml?branch=main&label=CI)](https://github.com/microsoft/copilot-brag-sheet/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/copilot-brag-sheet.svg)](https://www.npmjs.com/package/copilot-brag-sheet)
 [![npm downloads](https://img.shields.io/npm/dm/copilot-brag-sheet.svg)](https://www.npmjs.com/package/copilot-brag-sheet)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Awesome Copilot](https://img.shields.io/badge/Awesome-Copilot-blue?logo=github)](https://github.com/github/awesome-copilot)
-
-## Why
-
-Most developers can't remember what they shipped last week, let alone last quarter. This [Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) extension silently records your work as you go — files edited, PRs created, git actions — so when it's time for a performance review, you have a complete, impact-framed log.
-
-**Zero dependencies. Local-first. Cross-platform.**
 
 > **Requires:** Node.js 18+, [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) (with active Copilot subscription)
 
@@ -35,64 +35,75 @@ Plus three tools the agent can call on your behalf:
 | `review_brag_sheet` | Review recent entries for performance discussions |
 | `generate_work_log` | Render all records into a Markdown file |
 
-## Quick Start
+## Install (60 seconds)
 
-### 1. Install
+> ⚠️ **Don't use `copilot plugin install`.** This is a [`joinSession()`](https://docs.github.com/en/copilot/customizing-copilot/extending-copilot-with-mcp-and-extensions) extension and must live in `~/.copilot/extensions/`. Tracking [github/copilot-cli#3023](https://github.com/github/copilot-cli/issues/3023). Use one of the methods below.
 
-**One-liner:**
+### Recommended: one-liner
 
 ```bash
 # macOS / Linux
 curl -sL https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.sh | bash
 
-# Windows (PowerShell)
+# Windows (PowerShell 5.1+)
 irm https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.ps1 | iex
 ```
 
-**Or clone and install (includes interactive setup wizard):**
+The interactive setup wizard runs automatically when your terminal supports it.
+
+### Alternative: from npm
+
+```bash
+npm install -g copilot-brag-sheet
+copilot-brag-sheet                 # copies files + runs setup wizard
+```
+
+### For contributors
 
 ```bash
 git clone https://github.com/microsoft/copilot-brag-sheet.git
 cd copilot-brag-sheet
 ./install.sh          # macOS/Linux
-# .\install.ps1       # Windows
+.\install.ps1         # Windows
 ```
 
-The setup wizard will ask a few optional questions (Microsoft preset, git history, remote sync). You can re-run it anytime:
+### Activate
 
-```bash
-node ~/.copilot/extensions/copilot-brag-sheet/bin/setup.mjs
-```
-
-After installing, run `/clear` in the Copilot CLI or restart it to load the extension.
-
-### 2. Use
-
-Start a Copilot CLI session — the extension loads automatically:
+After install, run `/clear` (or restart Copilot CLI). On your first message you'll see:
 
 ```
 📊 Work logger active
 ```
 
-That's it. Sessions are tracked in the background. When you want to log notable work:
+Re-run setup anytime with `copilot-brag-sheet-setup` (after npm install) or `node ~/.copilot/extensions/copilot-brag-sheet/bin/setup.mjs`.
+
+> Install failing? [Open an issue](https://github.com/microsoft/copilot-brag-sheet/issues/new) with the error — Windows + macOS + Linux are CI-tested.
+
+## Use
+
+### Two things you do, ever
+
+**1. Say "brag" when you ship something.**
 
 ```
-You: "brag — shipped the auth refactor"
-Agent: [calls save_to_brag_sheet with summary, category, impact]
+You: brag — refactored auth to managed identity, killed 3 secret-rotation incidents/qtr
+Agent: [calls save_to_brag_sheet with summary, category, and impact]
 ```
 
-Or review your recent work:
+**2. Run "generate my work log" before review season.**
 
 ```
-You: "show me my recent work"
+You: generate my work log
+Agent: [calls generate_work_log → writes a categorized markdown file you can paste into your perf doc]
+```
+
+Everything else (file tracking, PR detection, git actions) is automatic. Most users only do step 2 once per quarter.
+
+### Optional: review recent work
+
+```
+You: show me my last 2 weeks
 Agent: [calls review_brag_sheet]
-```
-
-### 3. Generate a work log
-
-```
-You: "generate my work log"
-Agent: [calls generate_work_log → writes work-log.md]
 ```
 
 ## Examples
@@ -220,7 +231,8 @@ Agent: I'll frame this for Connect. Here's what I'd save:
 
 </details>
 
-## How It Works
+<details>
+<summary><strong>How It Works</strong> (internals — most users don't need this)</summary>
 
 ```
 Session Start ──► Track files, PRs, git actions ──► Session End
@@ -255,6 +267,8 @@ Default data directory:
 | Windows | `%LOCALAPPDATA%\copilot-brag-sheet\` |
 | macOS | `~/Library/Application Support/copilot-brag-sheet/` |
 | Linux | `${XDG_DATA_HOME:-~/.local/share}/copilot-brag-sheet/` |
+
+</details>
 
 ## Configuration
 
@@ -446,7 +460,7 @@ Override with `WORK_TRACKER_DIR` environment variable.
 <details>
 <summary><strong>Why don't I see "Work logger active"?</strong></summary>
 
-The message appears on your first interaction in a session (not on `/clear`). Type anything and it should appear. If it doesn't, check that the extension is installed at `~/.copilot/extensions/copilot-brag-sheet/extension.mjs`.
+The message appears on your **first message** after starting Copilot CLI (not immediately on `/clear`). Type anything and it should appear. If it doesn't, check that the extension is installed at `~/.copilot/extensions/copilot-brag-sheet/extension.mjs`.
 </details>
 
 <details>

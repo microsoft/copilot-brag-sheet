@@ -6,7 +6,8 @@
   "main": "extension.mjs",
   "bin": {
     "copilot-brag-sheet": "./bin/install.mjs",
-    "copilot-brag-sheet-setup": "./bin/setup.mjs"
+    "copilot-brag-sheet-setup": "./bin/setup.mjs",
+    "copilot-brag-sheet-mcp": "./bin/mcp-server.mjs"
   },
   "scripts": {
     "test": "node --test",
@@ -43,8 +44,11 @@
   },
   "files": [
     "extension.mjs",
+    "mcp-server.mjs",
     "lib/",
     "bin/",
+    "skills/",
+    ".claude-plugin/",
     "plugin.json",
     "package.json",
     "README.md",

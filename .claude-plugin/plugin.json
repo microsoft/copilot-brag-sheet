@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "name": "copilot-brag-sheet",
+  "version": "1.0.3",
+  "description": "Auto-track AI coding sessions into a structured work impact log. Zero dependencies, local-first. Cross-engine: Claude Code, Copilot CLI, Codex CLI, Cursor, Agency.",
+  "author": {
+    "name": "Microsoft",
+    "url": "https://github.com/microsoft/copilot-brag-sheet"
+  },
+  "homepage": "https://github.com/microsoft/copilot-brag-sheet",
+  "license": "MIT",
+  "keywords": [
+    "brag-sheet",
+    "work-tracker",
+    "impact-log",
+    "developer-productivity",
+    "performance-review",
+    "local-first"
+  ],
+  "skills": [
+    "./skills/brag-sheet/SKILL.md"
+  ],
+  "mcpServers": {
+    "brag-sheet": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/mcp-server.mjs"],
+      "description": "Save, review, and export brag-sheet entries via MCP."
+    }
+  }
+}

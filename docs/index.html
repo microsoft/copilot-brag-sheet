@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>copilot-brag-sheet — turn vague "what did I do?" into evidence-backed impact statements</title>
+    <meta
+      name="description"
+      content="A GitHub Copilot CLI extension that auto-records what you ship — files, PRs, git actions — so performance review season has receipts instead of a blank page. Local-first, zero deps, zero telemetry."
+    />
+    <link rel="canonical" href="https://microsoft.github.io/copilot-brag-sheet/" />
+    <meta name="theme-color" content="#0d1117" />
+
+    <!-- OpenGraph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://microsoft.github.io/copilot-brag-sheet/" />
+    <meta property="og:title" content="copilot-brag-sheet — automatic work tracking for GitHub Copilot CLI" />
+    <meta
+      property="og:description"
+      content="Turn vague 'what did I do?' into evidence-backed impact statements. Local-first Copilot CLI extension that records every session as you ship."
+    />
+    <meta
+      property="og:image"
+      content="https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/docs/og-image.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="copilot-brag-sheet" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="copilot-brag-sheet — automatic work tracking for Copilot CLI" />
+    <meta
+      name="twitter:description"
+      content="Turn vague 'what did I do?' into evidence-backed impact statements. Local-first Copilot CLI extension."
+    />
+    <meta
+      name="twitter:image"
+      content="https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/docs/og-image.png"
+    />
+
+    <!-- JSON-LD: SoftwareApplication -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "copilot-brag-sheet",
+        "alternateName": ["Copilot Brag Sheet", "brag-sheet", "Copilot CLI brag sheet"],
+        "description": "A GitHub Copilot CLI extension that auto-records your work as you go — files edited, PRs created, git actions — so performance review season has evidence instead of a blank page. Local-first, zero dependencies, zero telemetry.",
+        "url": "https://github.com/microsoft/copilot-brag-sheet",
+        "applicationCategory": "DeveloperApplication",
+        "applicationSubCategory": "CLI",
+        "operatingSystem": "macOS, Linux, Windows",
+        "softwareVersion": "1.0.3",
+        "downloadUrl": "https://www.npmjs.com/package/copilot-brag-sheet",
+        "license": "https://opensource.org/licenses/MIT",
+        "image": "https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/docs/og-image.png",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Microsoft",
+          "url": "https://microsoft.com"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "Microsoft",
+          "url": "https://github.com/microsoft"
+        },
+        "keywords": "brag sheet, performance review, Copilot CLI extension, GitHub Copilot, work log, impact tracking, promo packet, Connect prep, self-review"
+      }
+    </script>
+
+    <!-- JSON-LD: HowTo (install) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "Install copilot-brag-sheet",
+        "description": "Install the copilot-brag-sheet extension for GitHub Copilot CLI in three ways: curl one-liner, npm global install, or git clone.",
+        "totalTime": "PT1M",
+        "supply": [
+          { "@type": "HowToSupply", "name": "Node.js 18+" },
+          { "@type": "HowToSupply", "name": "GitHub Copilot CLI with active subscription" }
+        ],
+        "tool": [
+          { "@type": "HowToTool", "name": "Terminal" }
+        ],
+        "step": [
+          {
+            "@type": "HowToStep",
+            "name": "Install via curl (recommended)",
+            "text": "Run: curl -fsSL https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.sh | bash",
+            "url": "https://github.com/microsoft/copilot-brag-sheet#install"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Install via npm",
+            "text": "Run: npm install -g copilot-brag-sheet",
+            "url": "https://www.npmjs.com/package/copilot-brag-sheet"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Install from source",
+            "text": "Run: git clone https://github.com/microsoft/copilot-brag-sheet && cd copilot-brag-sheet && ./install.sh",
+            "url": "https://github.com/microsoft/copilot-brag-sheet"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Verify",
+            "text": "Open Copilot CLI and say 'brag' — the agent will offer to save your latest work.",
+            "url": "https://github.com/microsoft/copilot-brag-sheet#how-to-use"
+          }
+        ]
+      }
+    </script>
+
+    <style>
+      :root {
+        --bg: #0d1117;
+        --bg-elevated: #161b22;
+        --border: rgba(230, 237, 243, 0.10);
+        --fg: #e6edf3;
+        --muted: rgba(230, 237, 243, 0.66);
+        --subtle: rgba(230, 237, 243, 0.45);
+        --accent: #58a6ff;
+        --success: #7ee787;
+        --pink: #d370d6;
+        --warn: #f0883e;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Geist", Helvetica, Arial, sans-serif;
+        font-size: 17px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      a { color: var(--accent); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      code, pre, kbd {
+        font-family: "Geist Mono", "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+        font-size: 0.9em;
+      }
+      :where(p, li) code {
+        background: rgba(110, 118, 129, 0.18);
+        padding: 0.15em 0.4em;
+        border-radius: 6px;
+        font-size: 0.88em;
+      }
+
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* Top nav */
+      header.nav {
+        border-bottom: 1px solid var(--border);
+        background: rgba(13, 17, 23, 0.85);
+        backdrop-filter: saturate(180%) blur(8px);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .nav-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 0;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .brand .mark {
+        width: 28px; height: 28px; border-radius: 8px;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--pink) 100%);
+        display: inline-flex; align-items: center; justify-content: center;
+        color: var(--bg); font-weight: 700;
+      }
+      .nav-links { display: flex; gap: 22px; font-size: 15px; }
+      .nav-links a { color: var(--muted); }
+      .nav-links a:hover { color: var(--fg); text-decoration: none; }
+
+      /* Hero */
+      .hero {
+        padding: 84px 0 56px;
+        text-align: center;
+        background:
+          radial-gradient(circle at 80% 0%, rgba(88, 166, 255, 0.14) 0%, transparent 55%),
+          radial-gradient(circle at 10% 100%, rgba(211, 112, 214, 0.10) 0%, transparent 50%);
+      }
+      .hero h1 {
+        font-size: clamp(40px, 6vw, 72px);
+        font-weight: 700;
+        letter-spacing: -0.04em;
+        line-height: 1.0;
+        margin: 0 0 24px;
+      }
+      .hero .tagline {
+        font-size: clamp(18px, 2.4vw, 24px);
+        color: var(--muted);
+        max-width: 720px;
+        margin: 0 auto 12px;
+        letter-spacing: -0.01em;
+      }
+      .hero .tagline em { color: var(--fg); font-style: italic; }
+      .hero .tagline .impact { color: var(--success); font-weight: 500; font-style: normal; }
+      .hero .meta {
+        margin-top: 28px;
+        color: var(--subtle);
+        font-size: 14px;
+      }
+      .hero .meta strong { color: var(--muted); font-weight: 500; }
+
+      .badges {
+        display: flex; flex-wrap: wrap; gap: 10px;
+        justify-content: center;
+        margin-top: 28px;
+      }
+      .badges img { height: 22px; }
+
+      .cta-row {
+        display: flex; gap: 14px; justify-content: center;
+        margin-top: 32px; flex-wrap: wrap;
+      }
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 12px 22px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 15px;
+        border: 1px solid var(--border);
+        transition: all 0.15s ease;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: var(--bg);
+        border-color: var(--accent);
+      }
+      .btn-primary:hover { filter: brightness(1.1); text-decoration: none; }
+      .btn-secondary {
+        background: transparent;
+        color: var(--fg);
+      }
+      .btn-secondary:hover {
+        background: rgba(230, 237, 243, 0.05);
+        text-decoration: none;
+      }
+
+      /* Demo */
+      .demo {
+        padding: 24px 0 64px;
+      }
+      .demo-frame {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+        background: var(--bg-elevated);
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
+      }
+      .demo-frame img { display: block; width: 100%; height: auto; }
+
+      /* Sections */
+      section { padding: 56px 0; border-top: 1px solid var(--border); }
+      section h2 {
+        font-size: clamp(26px, 3.5vw, 34px);
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin: 0 0 12px;
+      }
+      section .lede {
+        color: var(--muted);
+        font-size: 17px;
+        max-width: 720px;
+        margin: 0 0 32px;
+      }
+
+      /* Install cards */
+      .install-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+      }
+      .install-card {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+      }
+      .install-card h3 {
+        margin: 0 0 6px;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--muted);
+        letter-spacing: 0;
+        display: flex; align-items: center; gap: 8px;
+      }
+      .install-card .label-tag {
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: rgba(126, 231, 135, 0.12);
+        color: var(--success);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+      .install-card .desc {
+        font-size: 13px;
+        color: var(--subtle);
+        margin: 0 0 14px;
+      }
+      .install-card pre {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 14px;
+        margin: 0;
+        overflow-x: auto;
+        font-size: 13px;
+        color: var(--fg);
+      }
+
+      /* Trigger phrases */
+      .triggers {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px 28px;
+      }
+      .trigger-list {
+        display: flex; flex-wrap: wrap; gap: 8px;
+        margin: 0; padding: 0; list-style: none;
+      }
+      .trigger-list li {
+        padding: 6px 12px;
+        background: rgba(88, 166, 255, 0.10);
+        border: 1px solid rgba(88, 166, 255, 0.18);
+        color: var(--accent);
+        border-radius: 999px;
+        font-size: 14px;
+        font-family: "Geist Mono", ui-monospace, monospace;
+      }
+      .triggers .hint {
+        margin: 18px 0 0;
+        color: var(--subtle);
+        font-size: 14px;
+      }
+
+      /* Comparison table */
+      .compare {
+        overflow-x: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+      table.compare-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+      }
+      .compare-table th, .compare-table td {
+        text-align: left;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+      }
+      .compare-table thead th {
+        background: var(--bg-elevated);
+        font-weight: 600;
+        color: var(--fg);
+        font-size: 14px;
+        letter-spacing: -0.01em;
+      }
+      .compare-table th:nth-child(2) { color: var(--muted); }
+      .compare-table th:nth-child(3) { color: var(--success); }
+      .compare-table tbody tr:last-child td { border-bottom: 0; }
+      .compare-table td:nth-child(2) { color: var(--muted); }
+      .compare-table td:nth-child(3) { color: var(--fg); }
+
+      /* Footer */
+      footer {
+        padding: 48px 0 64px;
+        border-top: 1px solid var(--border);
+        color: var(--subtle);
+        font-size: 14px;
+        text-align: center;
+      }
+      footer .links { margin-top: 14px; display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+      footer .links a { color: var(--muted); }
+
+      @media (max-width: 600px) {
+        .nav-links { gap: 14px; font-size: 13px; }
+        .hero { padding: 56px 0 32px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="wrap nav-inner">
+        <div class="brand">
+          <span class="mark">⚑</span>
+          <span>copilot-brag-sheet</span>
+        </div>
+        <nav class="nav-links">
+          <a href="#install">Install</a>
+          <a href="#triggers">Use</a>
+          <a href="#why">Why</a>
+          <a href="https://github.com/microsoft/copilot-brag-sheet">GitHub ↗</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" style="border-top: 0;">
+        <div class="wrap">
+          <h1>copilot-brag-sheet</h1>
+          <p class="tagline">
+            Turn vague <em>"what did I do?"</em> into evidence-backed
+            <span class="impact">impact statements</span> — automatically, every Copilot CLI session.
+          </p>
+          <p class="meta">
+            <strong>🔒 Local-first</strong> &nbsp;·&nbsp;
+            <strong>📦 Zero dependencies</strong> &nbsp;·&nbsp;
+            <strong>🚫 Zero telemetry</strong>
+          </p>
+          <div class="badges">
+            <a href="https://github.com/microsoft/copilot-brag-sheet/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/microsoft/copilot-brag-sheet/ci.yml?branch=main&label=CI" /></a>
+            <a href="https://www.npmjs.com/package/copilot-brag-sheet"><img alt="npm version" src="https://img.shields.io/npm/v/copilot-brag-sheet.svg" /></a>
+            <a href="https://www.npmjs.com/package/copilot-brag-sheet"><img alt="npm downloads" src="https://img.shields.io/npm/dm/copilot-brag-sheet.svg" /></a>
+            <a href="https://github.com/microsoft/copilot-brag-sheet/blob/main/LICENSE"><img alt="MIT" src="https://img.shields.io/badge/License-MIT-blue.svg" /></a>
+          </div>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#install">Install in 30 seconds</a>
+            <a class="btn btn-secondary" href="https://github.com/microsoft/copilot-brag-sheet">View on GitHub</a>
+          </div>
+        </div>
+      </section>
+
+      <div class="demo wrap">
+        <div class="demo-frame">
+          <img
+            src="https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/demo/demo.gif"
+            alt="Demo: typing 'brag' in Copilot CLI saves the current accomplishment with full session context"
+            loading="lazy"
+          />
+        </div>
+      </div>
+
+      <section id="install">
+        <div class="wrap">
+          <h2>Install</h2>
+          <p class="lede">
+            Requires <a href="https://nodejs.org/">Node.js 18+</a> and the
+            <a href="https://docs.github.com/en/copilot/github-copilot-in-the-cli">GitHub Copilot CLI</a>
+            with an active Copilot subscription.
+          </p>
+
+          <div class="install-grid">
+            <div class="install-card">
+              <h3>curl <span class="label-tag">Recommended</span></h3>
+              <p class="desc">One-liner. Works on macOS, Linux, and Windows (Git Bash / WSL).</p>
+<pre><code>curl -fsSL https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.sh | bash</code></pre>
+            </div>
+            <div class="install-card">
+              <h3>npm</h3>
+              <p class="desc">Global install — also gives you <code>npm update -g copilot-brag-sheet</code>.</p>
+<pre><code>npm install -g copilot-brag-sheet</code></pre>
+            </div>
+            <div class="install-card">
+              <h3>Git clone</h3>
+              <p class="desc">For contributors and source-tracking.</p>
+<pre><code>git clone https://github.com/microsoft/copilot-brag-sheet
+cd copilot-brag-sheet
+./install.sh</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="triggers">
+        <div class="wrap">
+          <h2>When the agent will use this</h2>
+          <p class="lede">
+            You don't need to memorize anything — just talk naturally about your work. Copilot picks up the brag-sheet tools when you say (anything close to) one of these:
+          </p>
+          <div class="triggers">
+            <ul class="trigger-list">
+              <li>brag</li>
+              <li>log work</li>
+              <li>save accomplishment</li>
+              <li>what did I ship</li>
+              <li>review my work</li>
+              <li>summarize my impact</li>
+              <li>generate work log</li>
+              <li>prep my brag sheet</li>
+              <li>promo packet</li>
+              <li>perf review</li>
+              <li>Connect prep</li>
+              <li>self-review</li>
+              <li>weekly recap</li>
+              <li>monthly summary</li>
+              <li>what did I do this quarter</li>
+            </ul>
+            <p class="hint">All processing is local. Records live in your OS app-data directory as structured JSON with atomic writes and orphan recovery.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="why">
+        <div class="wrap">
+          <h2>Why an extension, not just a SKILL.md?</h2>
+          <p class="lede">
+            If you've seen the brag-sheet skill listed elsewhere — that's the LLM guidance file. It's a <em>prompt</em> that tells the agent how to think about your work. This repo ships the prompt <strong>plus</strong> the extension that actually makes it happen.
+          </p>
+          <div class="compare">
+            <table class="compare-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Just the SKILL.md</th>
+                  <th>The full extension (this)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Trigger</td><td>LLM has to remember</td><td>Auto-captures every session</td></tr>
+                <tr><td>Data capture</td><td>LLM runs shell commands by hand</td><td>Direct file/PR/git tracking via Node API</td></tr>
+                <tr><td>Formatting</td><td>LLM formats markdown each time</td><td>Deterministic, typed, crash-safe</td></tr>
+                <tr><td>Storage</td><td>Markdown stored "somewhere"</td><td>Structured local JSON, atomic writes, orphan recovery</td></tr>
+                <tr><td>Updates</td><td>Re-curl to update</td><td><code>npm update</code> or one-line re-install</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p style="margin-top: 24px; color: var(--muted);">
+            <strong style="color: var(--fg);">Want just the prompt?</strong>
+            Use <a href="https://github.com/microsoft/copilot-brag-sheet/blob/main/skills/brag-sheet/SKILL.md">SKILL.md</a> — also published in
+            <a href="https://github.com/github/awesome-copilot">github/awesome-copilot</a>.<br />
+            <strong style="color: var(--fg);">Want it to actually happen automatically?</strong>
+            <a href="#install">Install the extension</a>.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <div>Built by <a href="https://github.com/microsoft">Microsoft</a> · MIT licensed · v1.0.3</div>
+        <div class="links">
+          <a href="https://github.com/microsoft/copilot-brag-sheet">Source</a>
+          <a href="https://www.npmjs.com/package/copilot-brag-sheet">npm</a>
+          <a href="https://github.com/microsoft/copilot-brag-sheet/issues">Issues</a>
+          <a href="https://github.com/microsoft/copilot-brag-sheet/blob/main/CHANGELOG.md">Changelog</a>
+          <a href="https://github.com/microsoft/copilot-brag-sheet/blob/main/ROADMAP.md">Roadmap</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

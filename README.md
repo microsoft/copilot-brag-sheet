@@ -16,6 +16,8 @@ A [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Awesome Copilot](https://img.shields.io/badge/Awesome-Copilot-blue?logo=github)](https://github.com/github/awesome-copilot)
 
+🌐 **Landing page:** [microsoft.github.io/copilot-brag-sheet](https://microsoft.github.io/copilot-brag-sheet/) · 🖼️ [Social preview](docs/og-image.png)
+
 > **Requires:** Node.js 18+, [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) (with active Copilot subscription)
 
 ## Why an extension, not just a SKILL.md?

@@ -5,14 +5,14 @@ description: >
   reviews, self-reviews, promotion packets, and weekly updates. Uniquely mines Copilot
   CLI session logs to reconstruct forgotten work, plus git commits and GitHub PRs.
   Enforces a 3-part impact contract (action → result → evidence). Works standalone
-  with zero dependencies. Use this skill whenever the user asks to document,
-  summarize, reconstruct, or organize their engineering work — even if they don't
-  literally say "brag sheet". Trigger phrases include: "brag", "log work", "what
-  did I do", "backfill my work history", "performance review", "self-review",
-  "self assessment", "write impact statement", "review prep", "promo packet",
-  "promotion case", "weekly update", "status report", "accomplishments", "what
-  did I ship", "I forgot to log my work", "summarize my work", "track my wins",
-  "end of half", "career growth", "work journal".
+  with one runtime dependency: the official MCP SDK (when running the MCP server).
+  Use this skill whenever the user asks to document, summarize, reconstruct, or
+  organize their engineering work — even if they don't literally say "brag sheet".
+  Trigger phrases include: "brag", "log work", "what did I do", "backfill my work
+  history", "performance review", "self-review", "self assessment", "write impact
+  statement", "review prep", "promo packet", "promotion case", "weekly update",
+  "status report", "accomplishments", "what did I ship", "I forgot to log my work",
+  "summarize my work", "track my wins", "end of half", "career growth", "work journal".
 license: MIT
 compatibility: 'Cross-platform (Windows, macOS, Linux). Works with any GitHub Copilot CLI session. Optional: git, gh CLI.'
 metadata:

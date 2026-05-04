@@ -10,26 +10,39 @@ Reusable" sections of the parent spec stand unchanged.
 
 ---
 
-## 1. Zero-dep vs SDK → **zero-dep, hand-roll JSON-RPC**
+## 1. Zero-dep vs SDK → **use the official MCP SDK + Zod**
 
-**Decision:** Implement MCP over stdio by hand. Do **not** add
-`@modelcontextprotocol/sdk` (or any other runtime dep) to `package.json`.
+**Decision:** Build the MCP server on `@modelcontextprotocol/sdk` with
+`zod` for input schemas. Declare both as runtime dependencies in
+`package.json`. The brand surface flips from "zero dependencies" to
+"MCP-conformant".
 
 **Why:**
 
-- The package's brand promise ("Zero dependencies, local-first") is in the
-  README, the npm description, the SKILL.md, and the marketplace
-  submissions. Breaking it for a transport shim is a bad trade.
-- The MCP wire protocol we need is small: `initialize`, `tools/list`,
-  `tools/call`, `ping`, plus newline-delimited JSON framing. ~50 lines of
-  hand-rolled code vs a transitive dep tree.
-- All real work (storage, render, git backup) already lives in `lib/` —
-  the SDK would only manage the transport, which is the easy part.
+- Conformance beats independence. The SDK validates handshake versions,
+  reserved JSON-RPC ids, capability negotiation, and content-type
+  envelopes for free. Hand-rolling these would diverge from the spec
+  every time the spec moves.
+- Zod gives us strict input schemas (`.strict()` → JSON Schema
+  `additionalProperties: false`), declarative `outputSchema` for every
+  tool, and parse errors that surface as proper `-32602` results rather
+  than ad-hoc strings. Both are required by the MCP protocol's reference
+  implementation guidance the parent spec cites.
+- Two deps is still a small surface. Both are widely audited, ship ESM,
+  and pin to caret ranges. The original "zero dependency" goal protected
+  install-time UX; with `npm install` already required for the extension,
+  two transitive trees do not change the install story meaningfully.
+- Enables the 10-question evaluation suite at `evals/` to run against the
+  same wire surface real MCP hosts will use, with no protocol drift
+  between local tests and downstream consumers.
 
-**Cost:** We own the framing/dispatch code. If MCP adds new required
-features (e.g. resources, prompts, sampling), we update one file.
+**Cost:** Two runtime deps (`@modelcontextprotocol/sdk`, `zod`). Brand
+copy in README / SKILL / plugin manifests had to flip. The tradeoff is
+explicit: we accept dependencies in exchange for spec conformance and a
+thinner server file.
 
-**File:** [`mcp-server.mjs`](../mcp-server.mjs) at repo root.
+**File:** [`mcp-server.mjs`](../mcp-server.mjs) at repo root, with the
+matching evaluation suite at [`evals/`](../evals/).
 
 ---
 

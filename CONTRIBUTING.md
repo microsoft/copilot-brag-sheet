@@ -20,7 +20,11 @@ cd copilot-brag-sheet
 npm test
 ```
 
-No `npm install` needed — zero dependencies.
+Then install runtime deps (`@modelcontextprotocol/sdk` and `zod` for the MCP server):
+
+```bash
+npm install
+```
 
 ## Project Structure
 
@@ -58,7 +62,7 @@ These are intentional constraints — please don't change them without discussio
 
 | Decision | Rationale |
 |----------|-----------|
-| Zero dependencies | Runs anywhere Node 18+ exists |
+| Minimal runtime deps | Only `@modelcontextprotocol/sdk` + `zod` (MCP server only); `lib/` stays pure Node |
 | No SQLite | Node 18 built-in SQLite is not available |
 | JSON records only | Cloud-sync safe, human-readable |
 | Atomic writes (tmp→fsync→rename) | Crash-safe, OneDrive/iCloud safe |

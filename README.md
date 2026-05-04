@@ -4,7 +4,7 @@
 
 ![demo](demo/demo.gif)
 
-**🔒 Local-first · 📦 Zero dependencies · 🚫 Zero telemetry**
+**🔒 Local-first · 🤝 MCP-conformant · 🚫 Zero telemetry**
 
 A [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) extension that silently records your work as you go — files edited, PRs created, git actions — so when performance review season hits, you have receipts instead of a blank page. ([What's a brag sheet?](https://jvns.ca/blog/brag-documents/))
 

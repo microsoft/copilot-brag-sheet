@@ -115,7 +115,7 @@ npx copilot-brag-sheet mcp-server
 
 ## What's Reusable (90% of code)
 
-All 6 lib modules are pure Node.js with zero dependencies:
+All 6 lib modules stay pure Node.js with no runtime dependencies (only the MCP server adds `@modelcontextprotocol/sdk` + `zod`):
 - `lib/paths.mjs` — data dir detection (OS-specific app-data)
 - `lib/config.mjs` — presets (microsoft, default), categories, user context
 - `lib/storage.mjs` — JSON record I/O (atomic writes, crash recovery)
@@ -125,9 +125,9 @@ All 6 lib modules are pure Node.js with zero dependencies:
 
 ## What Needs Building
 
-### 1. MCP Server (`mcp-server.mjs`) — ~100-150 lines
-- Import `@modelcontextprotocol/sdk` (or hand-roll JSON-RPC — it's simple)
-- Register 3 tools with JSON schemas matching current extension tool signatures
+### 1. MCP Server (`mcp-server.mjs`) — ~400-450 lines
+- Built on `@modelcontextprotocol/sdk` with `zod` for strict input schemas
+- Register 3 tools (camelCase output schemas, tool annotations, response_format)
 - Each tool handler calls into lib/ modules
 - Stdio transport (stdin/stdout)
 
@@ -143,11 +143,11 @@ All 6 lib modules are pure Node.js with zero dependencies:
 
 ### 4. Package.json Updates
 - Add `"mcp-server"` to `bin` field for npx distribution
-- Possibly add `@modelcontextprotocol/sdk` as optional dep (or keep zero-dep and hand-roll)
+- Add `@modelcontextprotocol/sdk` and `zod` as runtime deps (decided in [decisions doc](./cross-engine-decisions.md#1-zero-dep-vs-sdk--use-the-official-mcp-sdk--zod))
 
 ## Open Questions
 
-1. **Zero-dep vs SDK:** Hand-roll MCP JSON-RPC (~50 extra lines) to maintain zero-dependency promise? Or add `@modelcontextprotocol/sdk` as the first dependency?
+1. **Zero-dep vs SDK:** ✅ Resolved — adopt `@modelcontextprotocol/sdk` + `zod`. See [decisions doc](./cross-engine-decisions.md#1-zero-dep-vs-sdk--use-the-official-mcp-sdk--zod).
 2. **Hook state persistence:** Hooks run as separate processes — how to share session state between session_start and session_end? (Options: temp file, env var, PID-keyed storage)
 3. **File tracking in hooks:** Can Claude Code hooks observe file edits? Or do we only get session start/end?
 4. **Backward compat:** Should `install.ps1`/`install.sh` detect engine type and wire both extension.mjs AND MCP server?

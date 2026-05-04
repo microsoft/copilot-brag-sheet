@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Evaluation suite for the brag-sheet-mcp-server.
+
+  Per the MCP protocol's evaluation guidance, each question is:
+    - read-only / non-destructive / idempotent (with one save_to_brag_sheet
+      round-trip in q9 to verify the write path)
+    - independent — answering one question never reveals another's answer
+    - complex enough to require multiple tool calls or careful filtering
+    - answerable by a single, verifiable value via direct string comparison
+    - derivable from the seeded fixture (evals/fixtures/entries.json)
+
+  Setup before running an eval harness:
+    WORK_TRACKER_DIR=$(mktemp -d) node evals/seed.mjs
+    # then run the harness with the same WORK_TRACKER_DIR
+
+  Total: 10 qa_pairs.
+-->
+<evaluation>
+  <qa_pair>
+    <question>Generate the full work log to a temporary path of your choosing and report the total number of records that were written. Reply with only the number.</question>
+    <answer>15</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Use review_brag_sheet with weeks=1 and a limit large enough that nothing is paginated out. How many records does the response report inside that 7-day window? Reply with only the number.</question>
+    <answer>3</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Use review_brag_sheet with weeks=4 and a limit large enough that nothing is paginated out. How many records does the response report inside that 28-day window? Reply with only the number.</question>
+    <answer>9</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Use review_brag_sheet with weeks=12 and request enough pages to see every record. One record is tagged "kubernetes-rotation". What is the exact summary text of that record? Reply with only the summary, no quotes, no extra prose.</question>
+    <answer>Built the kubernetes-rotation CLI that batches AKS upgrades across 38 clusters with progressive rollout safeguards</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Use review_brag_sheet with weeks=12 and request enough pages to see every record. Which repo is associated with the record tagged "rate-limiter"? Reply with only the repo name.</question>
+    <answer>rate-limiter-sdk</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Use review_brag_sheet with weeks=12 and request enough pages to see every record. Which record has the impact line "184k USD per year savings; 99.99 percent ingestion SLA"? Reply with the exact category id of that record.</question>
+    <answer>infrastructure</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Use review_brag_sheet with weeks=12 and request enough pages to see every record. How many records belong to the "investigation" category? Reply with only the number.</question>
+    <answer>2</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Use review_brag_sheet with weeks=12 and request enough pages to see every record. One of the records patches a CVE before public disclosure. What is the exact CVE id mentioned in that record's summary? Reply with only the CVE id.</question>
+    <answer>CVE-2024-77777</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Call save_to_brag_sheet with summary="eval-marker-alpha-77" and category="documentation". Then use review_brag_sheet with weeks=1 and a large enough limit to see every record. How many records does the response report? Reply with only the number.</question>
+    <answer>4</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Call save_to_brag_sheet with arguments {"summary":"eval-uuid-probe","category":"definitely-not-a-category"}. The tool result will have isError=true. Read the error text. Which valid category id begins with the letter "p" appears in the list of valid categories? Reply with only that category id.</question>
+    <answer>pr</answer>
+  </qa_pair>
+</evaluation>

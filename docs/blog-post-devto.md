@@ -37,7 +37,7 @@ That's [`copilot-brag-sheet`](https://github.com/microsoft/copilot-brag-sheet).
 
 ## How it works
 
-Zero dependencies, Node 18+, runs everywhere.
+Local-first, Node 18+, runs everywhere.
 
 ```
 ┌─────────────────┐    hooks     ┌──────────────────┐
@@ -102,11 +102,11 @@ Every entry follows the same format: **Did X → Result Y → Evidence Z**. If y
 
 I originally just did `fs.writeFile`. Then OneDrive sync grabbed a half-written JSON file mid-write and corrupted my entire month. Now every write is `tmp file → fsync → rename`, which is atomic on every OS I care about.
 
-**2. Zero dependencies was worth the pain.**
+**2. Keeping the dep tree narrow was worth the pain.**
 
-I wanted SQLite. Node 18 doesn't have built-in SQLite. I wanted YAML. That's a parser dep. Each one is fine in isolation, but a tool that lives in your shell config and runs on every session start should not have a `node_modules` graph. JSON files in sharded directories turned out to be plenty.
+I wanted SQLite. Node 18 doesn't have built-in SQLite. I wanted YAML. That's a parser dep. Each one is fine in isolation, but a tool that lives in your shell config and runs on every session start should not have a sprawling `node_modules` graph. JSON files in sharded directories turned out to be plenty. The extension itself stays pure Node; only the optional MCP server pulls in `@modelcontextprotocol/sdk` + `zod` for spec conformance.
 
-107 tests, all green, no `node_modules`. That part feels good.
+107 tests, all green, a tiny dep tree. That part feels good.
 
 ## Try it
 

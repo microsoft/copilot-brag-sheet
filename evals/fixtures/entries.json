@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "description": "Deterministic seed entries for the brag-sheet MCP eval suite. Each entry's timestamp is computed at seed time as (now - daysAgo*86400000). Tags and summaries are unique so the eval LLM can locate any entry by exact text.",
+  "entries": [
+    {
+      "daysAgo": 2,
+      "summary": "Shipped the rust-based query planner that cut p95 latency from 480 ms to 96 ms across 12 tenants",
+      "category": "pr",
+      "tags": ["rust", "query-planner", "latency"],
+      "impact": "p95 latency 480 ms -> 96 ms across 12 tenants",
+      "repo": "infra-query-planner",
+      "branch": "feat/rust-planner"
+    },
+    {
+      "daysAgo": 4,
+      "summary": "Investigated and root-caused the cascading retry storm in the payments gateway during the 2025-Q1 incident",
+      "category": "investigation",
+      "tags": ["payments", "incident", "retry-storm"],
+      "impact": "RCA published; circuit breaker pattern adopted by 4 partner teams",
+      "repo": "payments-gateway",
+      "branch": "main"
+    },
+    {
+      "daysAgo": 6,
+      "summary": "Authored the design doc for the cross-region failover automation that replaced 14 hours of manual runbooks",
+      "category": "design",
+      "tags": ["failover", "automation", "design-doc"],
+      "impact": "14 manual runbook hours per region rotation -> 6 minutes",
+      "repo": "ops-failover",
+      "branch": "design/cross-region"
+    },
+    {
+      "daysAgo": 8,
+      "summary": "Built the kubernetes-rotation CLI that batches AKS upgrades across 38 clusters with progressive rollout safeguards",
+      "category": "tooling",
+      "tags": ["kubernetes-rotation", "aks", "cli"],
+      "impact": "AKS upgrade time 9 days -> 38 hours; zero customer-impacting incidents",
+      "repo": "k8s-rotation-cli",
+      "branch": "main"
+    },
+    {
+      "daysAgo": 10,
+      "summary": "Fixed the off-by-one bug in the leader-election timer that caused split-brain on 3 production clusters",
+      "category": "bugfix",
+      "tags": ["leader-election", "split-brain", "consensus"],
+      "impact": "Eliminated 3 recurring SEV2 incidents/month",
+      "repo": "consensus-core",
+      "branch": "fix/leader-election-timer"
+    },
+    {
+      "daysAgo": 14,
+      "summary": "Drove the cross-org migration from EOL TLS 1.1 to TLS 1.3 across 47 services on schedule",
+      "category": "collaboration",
+      "tags": ["tls", "migration", "security"],
+      "impact": "47/47 services migrated; closed an SDL audit finding",
+      "repo": "tls-migration",
+      "branch": "main"
+    },
+    {
+      "daysAgo": 18,
+      "summary": "Mentored two new engineers through their first on-call rotation; both passed the post-rotation review",
+      "category": "collaboration",
+      "tags": ["mentoring", "oncall", "team"],
+      "impact": "On-call confidence survey jumped from 3.1 to 4.4 / 5",
+      "repo": "team-handbook",
+      "branch": "main"
+    },
+    {
+      "daysAgo": 22,
+      "summary": "Held the on-call beeper for the long-tail platform rotation and resolved 9 pages with 100 percent SLO compliance",
+      "category": "oncall",
+      "tags": ["oncall", "platform", "slo"],
+      "impact": "9 pages, 9 mitigations, 0 SLO breaches across the week",
+      "repo": "platform-oncall",
+      "branch": "main"
+    },
+    {
+      "daysAgo": 26,
+      "summary": "Rewrote the documentation for the multi-tenant rate-limiter SDK and reduced support tickets by 62 percent",
+      "category": "documentation",
+      "tags": ["docs", "rate-limiter", "sdk"],
+      "impact": "Support ticket volume down 62 percent month over month",
+      "repo": "rate-limiter-sdk",
+      "branch": "docs/rewrite"
+    },
+    {
+      "daysAgo": 30,
+      "summary": "Stood up the new observability pipeline that replaced 3 legacy collectors and saved 184k USD per year",
+      "category": "infrastructure",
+      "tags": ["observability", "cost", "pipeline"],
+      "impact": "184k USD per year savings; 99.99 percent ingestion SLA",
+      "repo": "observability-pipeline",
+      "branch": "main"
+    },
+    {
+      "daysAgo": 38,
+      "summary": "Refactored the auth middleware to remove the global mutex that was throttling sign-in throughput",
+      "category": "pr",
+      "tags": ["auth", "middleware", "performance"],
+      "impact": "Sign-in throughput 1.2k -> 14.5k req/s on the same hardware",
+      "repo": "auth-svc",
+      "branch": "refactor/remove-global-mutex"
+    },
+    {
+      "daysAgo": 45,
+      "summary": "Investigated a memory leak in the streaming compactor that surfaced only after 96 hours of uptime",
+      "category": "investigation",
+      "tags": ["memory-leak", "compactor", "longevity"],
+      "impact": "Compactor RSS plateaus at 1.6 GB instead of OOM-killing daily",
+      "repo": "stream-compactor",
+      "branch": "main"
+    },
+    {
+      "daysAgo": 52,
+      "summary": "Designed and shipped the schema-registry-v2 migration tool that handled 11k schemas without manual intervention",
+      "category": "tooling",
+      "tags": ["schema-registry", "migration", "tooling"],
+      "impact": "11k schemas migrated; 0 production incidents",
+      "repo": "schema-registry-v2",
+      "branch": "feat/migration-tool"
+    },
+    {
+      "daysAgo": 58,
+      "summary": "Patched a CVE-2024-77777 RCE vector in the websocket handshake parser before public disclosure",
+      "category": "bugfix",
+      "tags": ["cve", "security", "websocket"],
+      "impact": "Pre-disclosure patch shipped to 100 percent of the fleet",
+      "repo": "ws-gateway",
+      "branch": "security/cve-2024-77777"
+    },
+    {
+      "daysAgo": 60,
+      "summary": "Drafted the architecture review for the new chaos-engineering harness used by all 6 platform pods",
+      "category": "design",
+      "tags": ["chaos", "architecture", "review"],
+      "impact": "Harness adopted by all 6 platform pods this quarter",
+      "repo": "chaos-harness",
+      "branch": "design/v1"
+    }
+  ]
+}

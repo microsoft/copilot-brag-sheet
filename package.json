@@ -1,7 +1,8 @@
 {
   "name": "copilot-brag-sheet",
   "version": "1.0.3",
-  "description": "Auto-track AI coding sessions into a structured work log. Zero dependencies, local-first.",
+  "description": "Auto-track AI coding sessions into a structured work log. Local-first, MCP-conformant.",
+  "mcpName": "io.github.microsoft/copilot-brag-sheet",
   "type": "module",
   "main": "extension.mjs",
   "bin": {
@@ -11,7 +12,12 @@
   },
   "scripts": {
     "test": "node --test",
+    "eval:seed": "node evals/seed.mjs",
     "prepublishOnly": "node --test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.0"
   },
   "keywords": [
     "copilot",
@@ -48,6 +54,7 @@
     "lib/",
     "bin/",
     "skills/",
+    "evals/",
     ".claude-plugin/",
     "plugin.json",
     "package.json",

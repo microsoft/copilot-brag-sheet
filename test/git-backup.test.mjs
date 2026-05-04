@@ -173,6 +173,37 @@ describe("backupToGit", () => {
     assert.ok(cmds.includes("push"));
   });
 
+  it("aborts rebase and skips push when pull --rebase fails", async () => {
+    // Regression test: previously an unhandled `git pull --rebase` failure
+    // would leave the data-dir repo in an unfinished-rebase state, breaking
+    // every subsequent save (commit refuses while a rebase is in progress).
+    const dataDir = makeDataDir("rebase-conflict");
+    mkdirSync(join(dataDir, ".git"));
+
+    const { runner, calls } = mockGitRunner({
+      diff: { code: 1 },
+      remote: { code: 0, stdout: "https://github.com/u/r.git" },
+      pull: { code: 1, stderr: "CONFLICT: cannot fast-forward" },
+    });
+
+    const result = await backupToGit({
+      dataDir,
+      gitConfig: { enabled: true, push: true },
+      runGit: runner,
+    });
+
+    assert.equal(result.success, false);
+    assert.equal(result.action, "pull-conflict");
+
+    const argsPerCall = calls.map((c) => c.args);
+    // We saw a `pull --rebase`...
+    assert.ok(argsPerCall.some((a) => a[0] === "pull" && a.includes("--rebase")));
+    // ...followed by a cleanup `rebase --abort`...
+    assert.ok(argsPerCall.some((a) => a[0] === "rebase" && a.includes("--abort")));
+    // ...and we did NOT push (would propagate desynced state to remote).
+    assert.ok(!argsPerCall.some((a) => a[0] === "push"));
+  });
+
   it("never throws on unexpected errors", async () => {
     const dataDir = makeDataDir("throws");
     mkdirSync(join(dataDir, ".git"));

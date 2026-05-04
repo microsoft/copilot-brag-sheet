@@ -23,7 +23,7 @@ By review time, you're reconstructing six months from `git log --author=you` and
 
 - **`git log` archaeology.** Tells you *what* changed, not *why it mattered*. "Bumped version" is not a brag.
 - **Manual notes.** I lasted three weeks. Once.
-- **Existing brag-doc playbooks.** The pattern works, but it requires the discipline I don't have.
+- **[Julia Evans' brag document](https://jvns.ca/blog/brag-documents/).** The original write-up that named the pattern. The pattern works, but it requires the discipline I don't have.
 
 The pattern: any system that depends on me remembering to log things is going to fail. The logging has to happen on its own.
 

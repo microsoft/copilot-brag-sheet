@@ -2,23 +2,23 @@
 
 Prioritized by impact ÷ effort. Contributions welcome — open an issue to discuss.
 
-> **Last updated:** 2026-05-01 — reflects post-FHL distribution data + competitive analysis. We have ~218 unique visitors / 53 unique cloners in 14 days from awesome-copilot, and one organic user already (krishra). The next priorities are about converting that traffic, not polishing install scripts.
+> **Last updated:** 2026-05-01.
 
-## Priority 0 — Distribution & product moat (next 2 weeks)
+## Priority 0 — Product completeness & distribution (next 2 weeks)
 
-The pitch promises "automatic" but the tool requires saying "brag —". Closing that gap **and** pushing on distribution moves the project further than any installer polish.
+The README promises "automatic" capture but the tool currently requires saying "brag —". Closing that gap is the highest-value work.
 
-- [ ] **Summary inference** — auto-detect significant work from session signals (PR opened, on-call resolved, design merged) and prompt the user to save. Closes the README's "automatic" promise. Also the differentiator vs Microsoft's `whatidid` skill (retrospective only). [#7](https://github.com/microsoft/copilot-brag-sheet/issues/7)
-- [ ] **Publish dev.to blog post** — draft already exists at [`docs/blog-post-devto.md`](docs/blog-post-devto.md). Publish with canonical link to README. Visibility window from awesome-copilot is open NOW.
-- [ ] **GitHub Pages landing page with structured data** — JSON-LD `SoftwareApplication` + `HowTo` schema, OG tags. Goal: outrank third-party scrapers (claudskills.com) on Google searches for "brag sheet copilot".
-- [ ] **OpenGraph image** for share previews in Slack/Teams/Twitter.
-- [ ] **Reclaim attribution from claudskills.com** — they re-host our SKILL.md with no source link behind a $9/mo paywall. Polite request for attribution = free SEO backlink.
-- [ ] **Submit SKILL.md to other Claude/skill registries** — anthropic-skills awesome lists, Glama, Smithery, awesome-claude-skills. ~1 hr total.
-- [ ] **Share internally** — Microsoft Teams already shows up as a top traffic referrer organically. Post deliberately in XPP, AI org, FHL, Connect-prep channels.
+- [ ] **Summary inference** — auto-detect significant work from session signals (PR opened, on-call resolved, design merged) and prompt the user to save. Closes the README's "automatic" promise. [#7](https://github.com/microsoft/copilot-brag-sheet/issues/7)
+- [ ] **Publish dev.to blog post** — draft at [`docs/blog-post-devto.md`](docs/blog-post-devto.md). Publish with canonical link back to the repo README.
+- [ ] **GitHub Pages landing page with structured data** — JSON-LD `SoftwareApplication` + `HowTo` schema and OpenGraph tags so search results and link previews are accurate.
+- [ ] **OpenGraph image** for share previews in Slack/Teams.
+- [ ] **Source attribution** — request source links where SKILL.md is mirrored on third-party sites without attribution.
+- [ ] **Submit SKILL.md to additional skill registries** — public catalogs that accept community submissions (e.g. awesome-* lists).
+- [ ] **Internal Microsoft channels** — share the project in relevant Microsoft engineering and Connect-prep channels.
 
-## Priority 1 — Cross-engine support (Agency + Claude Code)
+## Priority 1 — Cross-engine support
 
-The biggest distribution unlock. See [`docs/cross-engine-spec.md`](docs/cross-engine-spec.md).
+See [`docs/cross-engine-spec.md`](docs/cross-engine-spec.md).
 
 - [ ] **MCP server** (`mcp-server.mjs`) — wraps the existing `lib/` modules in MCP protocol so any MCP-compatible client (Copilot CLI, Claude Code, VS Code, Codex) can use the tools. Resolve the spec's 5 open questions first.
 - [ ] **Hooks** (`hooks/`) — `session-start.mjs` + `session-end.mjs` for cross-engine session tracking

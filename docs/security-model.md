@@ -226,8 +226,8 @@ where they're publicly documented. Targets to start with:
 
 Replacement should be `<redacted:type>` so the record stays human-readable.
 
-This is **not** ambitious secret detection (we won't beat GitGuardian).
-It's defense in depth so a casual paste doesn't end up in a quarterly review.
+This is **not** ambitious secret detection. It's defense in depth so a
+casual paste doesn't end up in a quarterly review.
 
 ### 2. Filesystem ACLs on the data dir
 

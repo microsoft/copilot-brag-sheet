@@ -521,6 +521,97 @@ Five-step recipes. Pick the one that matches your task; deviate only with reason
 
 ---
 
+## 13. When to update this file
+
+Add an entry here when **any** of these is true:
+
+1. **An agent made the same mistake twice** — the rule prevents
+   recurrence (e.g. §10.1 "no runtime deps" exists because the v1.0.1
+   bug was a side-effect of one).
+2. **A code review or release-job caught something an agent should
+   have known** — e.g. §10.9 "files array + release.yml required
+   array" entered after a publish failure.
+3. **You re-typed the same correction you typed last session** — that
+   is the load-bearing signal that the file is too thin.
+4. **A new teammate (human or AI) would need this context to ship
+   safely** — onboarding-grade facts belong in §1, §2, or §9.
+
+Conversely, **delete** entries when:
+
+- The "never" no longer applies (e.g. a dep we used to forbid is now
+  approved with a written exception).
+- The rationale is now obvious from the code (don't restate type
+  signatures the agent can read).
+- The fact is more accurately captured in a sibling doc
+  (`docs/security-model.md`, `CHANGELOG.md`, etc.) — link to it
+  instead.
+
+Companion file: `skills/brag-sheet/SKILL.md` is the **portable
+prompt** that ships in `awesome-copilot` and runs against any user's
+repo. This file (`AGENTS.md`) is **facts about this repo for any
+agent**. Keep that split clear when deciding which one a new note
+belongs in.
+
+---
+
+## 14. Voice and tone for public-facing text
+
+This repository is part of the Microsoft open-source program. All
+text that ships in the repo or to a registry — README, CHANGELOG, PR
+descriptions, commit messages, code comments, files under `docs/`,
+`skills/brag-sheet/SKILL.md`, marketplace submissions — must read as
+considered, neutral, professional engineering writing.
+
+**Do:**
+
+- Write conventions and rules as our own. The repo speaks with one
+  voice; that voice is "Microsoft engineering doc."
+- Cite primary sources only when needed for technical correctness —
+  RFCs, official protocol specifications, the language standard, the
+  Node API docs.
+- Reference our own prior work (issues, PRs, CHANGELOG entries) by
+  number when context helps.
+- Use declarative sentences. Prefer "this file does X" over "here we
+  attempt to do X."
+
+**Do not:**
+
+- Cite specific external developers, blog posts, or community
+  projects as inspiration ("inspired by X", "after reading Y", "h/t
+  Z", "borrowed from", "shamelessly stole from"). If a pattern is
+  worth adopting, adopt it; the source belongs in your private
+  engineering notes, not in the repo.
+- Compare or evaluate competing products. Statements like "X is
+  better than Y" or "Y was a mess" do not belong in this repo, even
+  in commit messages.
+- Use casual, ironic, or self-deprecating voice ("we copy-pasted
+  this", "honestly we just guessed", "lol it works"). It reads as
+  unprofessional in a Microsoft-org repo and is impossible to undo
+  once it lands in git history.
+- Insert personal opinions disguised as commentary in code comments.
+  Code comments explain *what the code does and why*, not *how the
+  author feels about a third party*.
+
+**Legitimate technical references — these are fine:**
+
+- "Implements the Model Context Protocol over stdio" (technical fact)
+- "Compatible with GitHub Copilot CLI, Claude Code, and other MCP
+  clients" (interop fact)
+- "Per RFC 8259 §6, JSON numbers …" (spec citation for correctness)
+- A link to a primary source in a code comment when the source is
+  needed to understand a non-obvious behaviour (e.g. a Windows API
+  edge case)
+
+When in doubt: ask "would I want this sentence read aloud at a
+customer review?" If no, take it out.
+
+Private engineering notes (your scratchpad of "we got this idea
+from X blog post") belong outside the repo. A typical home is
+`~/Documents/brag-sheet-private-notes/` or your usual personal
+notes location.
+
+---
+
 _Last updated: 2026-05. Keep this file living. If you discover a
 convention not listed here, add it. If a "never" doesn't apply anymore,
 delete it with explanation in the PR._

@@ -19,6 +19,7 @@ import { readRecords } from "../lib/storage.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_PATH = join(__dirname, "..", "mcp-server.mjs");
+const BIN_PATH = join(__dirname, "..", "bin", "mcp-server.mjs");
 const SERVER_NAME = "brag-sheet-mcp-server";
 
 let dataDir;
@@ -102,6 +103,39 @@ function runRpc(requests, env = {}) {
 }
 
 describe("mcp-server: protocol handshake", () => {
+  it("bin entry point boots the server (regression: bin shim must call runServer)", async () => {
+    // The bin/mcp-server.mjs shim is what end users invoke via
+    // `npx copilot-brag-sheet-mcp` and `claude mcp add ... -- npx ...`.
+    // It must actually start the transport — driving SERVER_PATH directly is
+    // not enough to catch a broken shim.
+    const child = spawn(process.execPath, [BIN_PATH], {
+      env: { ...process.env, WORK_TRACKER_DIR: dataDir },
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    let stdout = "";
+    child.stdout.on("data", (b) => { stdout += b.toString("utf8"); });
+    child.stdin.write(`${JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: {
+        protocolVersion: "2024-11-05",
+        capabilities: {},
+        clientInfo: { name: "test-client", version: "1.0.0" },
+      },
+    })}\n`);
+    // Give the server a moment to respond before closing stdin.
+    await new Promise((r) => setTimeout(r, 500));
+    child.stdin.end();
+    const code = await new Promise((r) => child.on("close", r));
+
+    assert.equal(code, 0, "bin shim exited non-zero");
+    const lines = stdout.split("\n").filter((l) => l.trim());
+    const init = lines.map((l) => JSON.parse(l)).find((m) => m.id === 1);
+    assert.ok(init?.result?.serverInfo?.name, `bin shim never replied to initialize; stdout was: ${stdout}`);
+    assert.equal(init.result.serverInfo.name, SERVER_NAME);
+  });
+
   it("responds to initialize with protocol + capabilities + serverInfo", async () => {
     const { responses } = await runRpc([
       {

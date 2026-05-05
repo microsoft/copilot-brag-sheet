@@ -21,8 +21,11 @@ created, git actions, manual brag entries — into structured local JSON so a
 developer has receipts at performance review time instead of a blank page.
 It ships as a [`joinSession()`](https://docs.github.com/en/copilot/customizing-copilot/extending-copilot-with-mcp-and-extensions)
 extension installed into `~/.copilot/extensions/copilot-brag-sheet/`,
-runs entirely on the user's machine, has **zero runtime dependencies**, and
-emits **zero telemetry**. The user-facing pitch is:
+runs entirely on the user's machine, and emits **zero telemetry**. The
+core library (`lib/`) is dependency-free; the cross-engine MCP server
+(`mcp-server.mjs`) takes two pinned, audited runtime dependencies — the
+official MCP SDK and Zod — to stay protocol-conformant. The user-facing
+pitch is:
 
 > Turn vague *what did I do?* into evidence-backed impact statements —
 > automatically, every Copilot CLI session.
@@ -67,7 +70,8 @@ Copilot CLI host  ──spawns──▶  extension.mjs (joinSession)
 | [`bin/setup.mjs`](bin/setup.mjs) | Interactive wizard: presets, git backup, output path. Non-TTY exits cleanly (CI-safe). |
 | [`install.sh`](install.sh) / [`install.ps1`](install.ps1) | Curl-pipe-bash installers. Cross-platform CI-tested on PS 5.1 and pwsh 7. |
 
-**Core library** (`lib/`) — zero deps, pure Node, Copilot-agnostic:
+**Core library** (`lib/`) — dependency-free, pure Node, Copilot-agnostic
+(safe to import from any entry point):
 
 | Module | Responsibility | Key exports |
 |---|---|---|
@@ -129,10 +133,10 @@ $env:COPILOT_HOME = "$env:TEMP\copilot-home-test"
 Get-ChildItem $env:COPILOT_HOME\extensions\copilot-brag-sheet
 ```
 
-**There is no `npm install` step for contributors** — the repo has zero
-runtime dependencies and no devDependencies. Cloning and running
-`npm test` Just Works. If a future change ever requires `npm install`,
-that's a red flag — see §10.
+**Contributors must run `npm install` before `npm test`** because
+`mcp-server.mjs` depends on the MCP SDK and Zod (see §4 conventions).
+The `lib/` modules and `extension.mjs` themselves remain dependency-free;
+only the MCP entry point pulls runtime deps.
 
 ---
 
@@ -141,9 +145,14 @@ that's a red flag — see §10.
 These are non-negotiable. Most of them encode hard-won lessons (CI failures,
 real bug reports). Don't change them without an issue and discussion first.
 
-- **Zero runtime dependencies.** `package.json` has no `dependencies`. Only
-  `peerDependencies` (the Copilot SDK, declared `optional`). If you reach
-  for npm, stop and use `node:` built-ins.
+- **Minimal, pinned runtime dependencies.** `package.json` has exactly
+  two runtime `dependencies`: `@modelcontextprotocol/sdk` (cross-engine
+  MCP transport) and `zod` (input/output schema validation in
+  `mcp-server.mjs`). Both are required for MCP protocol conformance.
+  `lib/*` and `extension.mjs` remain dependency-free — they MUST NOT
+  import either package directly. Any new runtime dependency requires
+  an issue, a written rationale, and an update to this section in the
+  same PR. `peerDependencies` lists the Copilot SDK as `optional`.
 - **ESM only.** `.mjs` everywhere, `"type": "module"` in `package.json`.
   No CommonJS. No transpilation. Use `node:`-prefixed imports
   (`node:fs`, `node:path`, `node:crypto`, `node:child_process`).
@@ -380,10 +389,12 @@ proving distribution conversion before fanning out further.
 
 > If you're tempted to do any of these, **stop and open an issue first.**
 
-1. **Add a runtime dependency.** Zero deps is a feature. It's the answer
-   to half the install bugs in `CHANGELOG.md`. If you need
-   functionality, write it in `lib/` against `node:` built-ins. There is
-   no `npm install` for contributors and we want to keep it that way.
+1. **Add a runtime dependency without an issue + rationale.** Two
+   pinned deps (the MCP SDK and Zod, both required for protocol
+   conformance in `mcp-server.mjs`) is the entire approved list. Any
+   third dep needs an issue, a written justification, an audit note,
+   and an update to §4 in the same PR. `lib/` and `extension.mjs`
+   stay dependency-free regardless.
 2. **Write JSON non-atomically.** Always go through
    [`atomicWriteJSON`](lib/storage.mjs:216). A `writeFileSync` straight to
    the final path will eventually corrupt the user's history during a
@@ -404,8 +415,10 @@ proving distribution conversion before fanning out further.
 6. **Add an `update-notifier` or any in-process "you should update" UI.**
    Same reason as above — stdio is sacred. Plus it would break zero
    deps. Users update via `npm update -g`.
-7. **Use `npm install` for a runtime dep.** See #1. There are exactly
-   zero approved exceptions today.
+7. **Add a runtime dep to `lib/` or `extension.mjs`.** These two
+   surfaces stay dependency-free. New runtime deps are only allowed in
+   `mcp-server.mjs` and need the §4 process (issue + rationale + same-PR
+   update to §4).
 8. **Bypass `sanitize()` when persisting LLM/user text.** Reserved
    markers, pipe chars, leading `#`, and length must always be filtered.
    See `lib/records.mjs:50-71`.
@@ -491,7 +504,7 @@ Five-step recipes. Pick the one that matches your task; deviate only with reason
 
 ### How to add a new lib module
 
-1. Create `lib/<name>.mjs` — pure Node, zero deps, `node:`-prefixed
+1. Create `lib/<name>.mjs` — pure Node, dependency-free, `node:`-prefixed
    imports, `export`ed functions only.
 2. Create `test/<name>.test.mjs` mirroring it.
 3. Add the file to `package.json`'s `files` array.
@@ -526,8 +539,8 @@ Five-step recipes. Pick the one that matches your task; deviate only with reason
 Add an entry here when **any** of these is true:
 
 1. **An agent made the same mistake twice** — the rule prevents
-   recurrence (e.g. §10.1 "no runtime deps" exists because the v1.0.1
-   bug was a side-effect of one).
+   recurrence (e.g. §10.1 "no runtime deps without process" exists
+   because adding one without updating §4 created a doc/code split).
 2. **A code review or release-job caught something an agent should
    have known** — e.g. §10.9 "files array + release.yml required
    array" entered after a publish failure.
@@ -535,6 +548,13 @@ Add an entry here when **any** of these is true:
    is the load-bearing signal that the file is too thin.
 4. **A new teammate (human or AI) would need this context to ship
    safely** — onboarding-grade facts belong in §1, §2, or §9.
+
+**Process rule for §4 "non-negotiable" changes:** if a PR breaks a §4
+convention, the same PR must update §4 to reflect the new contract.
+Splitting the code change and the doc change into separate PRs leaves
+agents reading stale rules and "fixing" the new code out from under
+itself. This rule exists because the v1.0.4 MCP SDK adoption initially
+shipped without flipping the §4 "zero runtime dependencies" line.
 
 Conversely, **delete** entries when:
 

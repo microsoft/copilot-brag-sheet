@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 import {
   DEFAULT_CONFIG,
@@ -14,7 +15,7 @@ import {
 } from "../lib/config.mjs";
 
 function createTempDir() {
-  return mkdtempSync(join(process.cwd(), "test-temp-config-"));
+  return mkdtempSync(join(tmpdir(), "test-temp-config-"));
 }
 
 test("loadConfig returns defaults when config.json is missing", () => {

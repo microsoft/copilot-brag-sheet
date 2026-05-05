@@ -217,8 +217,13 @@ const ReviewOutputSchema = z.object({
 
 const GenerateInputSchema = z.object({
   outputPath: z.string()
+    .refine((p) => path.isAbsolute(p), {
+      message: "outputPath must be an absolute path (got a relative path)",
+    })
     .optional()
-    .describe("Absolute path of the markdown file to write. Defaults to work-log.md inside the data directory."),
+    .describe(
+      "Absolute path of the markdown file to write. Must be absolute — relative paths are rejected to prevent accidentally clobbering files in the host's working directory. Defaults to work-log.md inside the data directory.",
+    ),
   response_format: ResponseFormatSchema,
 }).strict();
 

@@ -532,6 +532,30 @@ describe("mcp-server: generate_work_log", () => {
     assert.equal(typeof sc.bytesWritten, "number");
     assert.ok(sc.bytesWritten > 0);
   });
+
+  it("rejects a relative outputPath rather than writing to the host's cwd", async () => {
+    // Without this guard a model could pass `outputPath: "README.md"` and
+    // clobber a file in whatever directory the MCP host launched the server
+    // from. The schema must require absolute paths.
+    const { responses } = await runRpc([
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "generate_work_log",
+          arguments: { outputPath: "relative/path.md" },
+        },
+      },
+    ]);
+    const res = responses[0];
+    assert.equal(res.result?.isError, true, JSON.stringify(res));
+    assert.match(
+      res.result.content[0].text,
+      /absolute/i,
+      `expected an 'absolute path' error, got: ${res.result.content[0].text}`,
+    );
+  });
 });
 
 describe("mcp-server: unknown tool", () => {

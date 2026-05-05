@@ -20,16 +20,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **`copilot-brag-sheet-setup` bin** is now the recommended way to re-run the wizard (no more remembering the absolute path).
 - **`COPILOT_HOME` documented** in the README's Environment Variables section.
 - **`BRAG_SHEET_DEBUG=1` env var** — when set, `extension.mjs` logs to stderr at module load and `onSessionStart` so you can verify the host actually loaded the extension.
-- **README rewrite** — based on competitive analysis (claudskills.com is reposting our SKILL.md without attribution):
+- **README rewrite**:
   - Stronger hero hook ("Turn vague *what did I do?* into evidence-backed impact statements")
-  - New "**Why an extension, not just a SKILL.md?**" section that names the moat: deterministic capture, structured storage, typed tool contracts
+  - New "**Why an extension, not just a SKILL.md?**" section that explains what the extension provides over the prompt alone: deterministic capture, structured storage, typed tool contracts
   - "**When the agent will use this**" section listing the trigger phrases
 - **CI: tarball validation** — `release.yml` now checks `npm pack --dry-run` against a required-files list before publishing. Catches future cases where a new `lib/foo.mjs` gets added but isn't in `package.json`'s `files` whitelist.
 - **`prepublishOnly` script** — runs `npm test` automatically on local `npm publish` to prevent accidental untested releases.
 
 ### Changed
 
-- **ROADMAP.md restructured** — Priority 0 is now distribution + product moat (summary inference, blog post, SEO landing page, attribution reclaim) based on real traffic data (218 unique visitors / 53 cloners in 14 days from awesome-copilot). Cross-engine moved to Priority 1. Packaging polish moved to Priority 2.
+- **ROADMAP.md restructured** — Priority 0 is now product completeness and distribution (summary inference, blog post, landing page). Cross-engine moved to Priority 1. Packaging polish moved to Priority 2.
 - **Removed dead code** in `bin/install.mjs` (`SKIP` set defined but never used; `pathToFileURL` imported then voided).
 
 ## [1.0.2] — 2026-05-01

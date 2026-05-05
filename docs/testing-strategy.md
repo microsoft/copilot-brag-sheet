@@ -141,9 +141,7 @@ assert.equal(records.length, 1);
 ```
 
 The import-map can use `node --conditions=test` + a `package.json`
-exports map, or a tiny build step that rewrites the SDK import. The
-github/copilot-sdk team uses essentially this pattern in
-`nodejs/test/extension.test.ts` — that is the exemplar to study.
+exports map, or a tiny build step that rewrites the SDK import.
 
 ### 2. Subprocess nightly E2E (high value, high effort)
 
@@ -197,7 +195,7 @@ schema drift before users do.
   `lib/git-backup.mjs` — take an optional function param so the test
   can pass a stub.
 - **Assertions:** prefer `assert.deepEqual` / `assert.equal` over field-by-
-  field. Match the codex AGENTS.md guidance — "compare entire objects."
+  field. Compare entire objects rather than enumerating one field at a time.
 - **One scenario per `it()`.** A test that checks five things should
   probably be five tests.
 - **Keep tests fast.** Total suite runs in ~750ms today. If a single
@@ -228,5 +226,3 @@ schema drift before users do.
   overlaps with the conventions section.
 - [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — the
   authoritative source for what CI runs.
-- github/copilot-sdk's `nodejs/test/extension.test.ts` — exemplar for
-  the mock-host approach (#1 above).

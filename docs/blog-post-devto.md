@@ -23,7 +23,7 @@ By review time, you're reconstructing six months from `git log --author=you` and
 
 - **`git log` archaeology.** Tells you *what* changed, not *why it mattered*. "Bumped version" is not a brag.
 - **Manual notes.** I lasted three weeks. Once.
-- **[Julia Evans' brag document](https://jvns.ca/blog/brag-documents/).** Genuinely great idea. Same problem — it requires the discipline I don't have.
+- **[Julia Evans' brag document](https://jvns.ca/blog/brag-documents/).** The original write-up that named the pattern. The pattern works, but it requires the discipline I don't have.
 
 The pattern: any system that depends on me remembering to log things is going to fail. The logging has to happen on its own.
 
@@ -124,13 +124,3 @@ Then `/clear` (or restart) Copilot CLI. On your first message you'll see `📊 W
 - **Issues, PRs, weird ideas**: very welcome
 
 If you've solved this problem differently — even with pen and paper — I genuinely want to hear about it. Drop a comment, open an issue, tell me what's missing. And if it saves you one hour of `git log` archaeology next review season, that's a win for both of us. ⭐
-
----
-
-<!--
-Cross-post plan:
-- dev.to first (this post), Tue-Thu 9-11am ET
-- Show HN 24h later — link the repo, not the essay
-- r/ExperiencedDevs 24-48h after — frame as discussion ("how do you track your work for reviews?"), not a launch
-- LinkedIn — performance review angle resonates with eng managers
--->

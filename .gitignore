@@ -1,6 +1,4 @@
 node_modules/
-*.lock
-package-lock.json
 *.tmp.*
 errors.log
 .DS_Store

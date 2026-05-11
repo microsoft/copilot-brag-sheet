@@ -4,7 +4,7 @@
 
 ![demo](demo/demo.gif)
 
-**🔒 Local-first · 📦 Zero dependencies · 🚫 Zero telemetry**
+**🔒 Local-first · 🤝 MCP-conformant · 🚫 Zero telemetry**
 
 A [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) extension that silently records your work as you go — files edited, PRs created, git actions — so when performance review season hits, you have receipts instead of a blank page. ([What's a brag sheet?](https://jvns.ca/blog/brag-documents/))
 
@@ -469,7 +469,7 @@ Your data stays in the OS app-data directory — delete it manually if you want 
 <details>
 <summary><strong>Does this send my data anywhere?</strong></summary>
 
-No. All data is stored locally in your OS app-data directory. Zero telemetry, zero network calls. The extension has zero runtime dependencies. If you enable git push, data goes only to a remote you configure.
+No. All data is stored locally in your OS app-data directory. Zero telemetry, zero network calls. The core library has no runtime dependencies; the cross-engine MCP server (`mcp-server.mjs`) uses the official MCP SDK and Zod. If you enable git push, data goes only to a remote you configure.
 </details>
 
 <details>
@@ -506,7 +506,7 @@ Enable git backup in your config, add a remote repo, and your entries sync autom
 
 - Node.js 18+
 - [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli)
-- Zero runtime dependencies
+- Local-first: data stays on your machine, no telemetry
 
 ## Development
 

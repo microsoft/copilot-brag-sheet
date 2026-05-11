@@ -21,6 +21,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
+      - run: npm ci --no-audit --no-fund
       - run: npm test
 
   release:
@@ -35,6 +36,8 @@ jobs:
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org/'
+
+      - run: npm ci --no-audit --no-fund
 
       - name: Extract version from tag
         id: version
@@ -56,10 +59,12 @@ jobs:
           # whitelist, this catches it before the broken publish goes out.
           required=(
             extension.mjs
+            mcp-server.mjs
             plugin.json
             package.json
             bin/install.mjs
             bin/setup.mjs
+            bin/mcp-server.mjs
             lib/config.mjs
             lib/git-backup.mjs
             lib/lock.mjs
@@ -67,6 +72,10 @@ jobs:
             lib/records.mjs
             lib/render.mjs
             lib/storage.mjs
+            .claude-plugin/plugin.json
+            evals/brag-sheet.eval.xml
+            evals/fixtures/entries.json
+            evals/seed.mjs
           )
           npm pack --dry-run --json > /tmp/pack.json
           missing=()

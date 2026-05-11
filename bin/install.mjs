@@ -13,6 +13,7 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   rmSync,
   readFileSync,
 } from "node:fs";
@@ -39,7 +40,13 @@ if (nodeMajor < 18) {
   process.exit(1);
 }
 
-// Verify the package source has the files we expect
+// Verify the package source has the files we expect.
+//
+// `bin/mcp-server.mjs` is intentionally NOT included here — the MCP server
+// is delivered as an npm bin (`npx -y --package copilot-brag-sheet
+// copilot-brag-sheet-mcp`), not from the Copilot extension layout. Copying
+// it into ~/.copilot/extensions/ would also need ../mcp-server.mjs and its
+// node_modules, which the install path cannot guarantee.
 const REQUIRED = ["extension.mjs", "package.json", "plugin.json", "lib", "bin"];
 const missing = REQUIRED.filter((p) => !existsSync(join(PKG_ROOT, p)));
 if (missing.length) {
@@ -47,6 +54,10 @@ if (missing.length) {
   console.error(`  Looked in: ${PKG_ROOT}`);
   process.exit(1);
 }
+
+// Files to skip when copying bin/. The MCP server entry is published via
+// the npm `bin` and is not part of the Copilot extension install layout.
+const BIN_SKIP = new Set(["mcp-server.mjs"]);
 
 // ── Install ─────────────────────────────────────────────────────────────────
 const pkg = JSON.parse(readFileSync(join(PKG_ROOT, "package.json"), "utf8"));
@@ -57,9 +68,21 @@ if (existsSync(TARGET_DIR)) {
 }
 mkdirSync(TARGET_DIR, { recursive: true });
 
-// Copy package contents — only what the extension needs at runtime
+// Copy package contents — only what the extension needs at runtime.
+// bin/ is copied piecewise so the MCP server bin (which depends on
+// ../mcp-server.mjs and node_modules) is excluded from this layout.
 for (const entry of REQUIRED) {
-  cpSync(join(PKG_ROOT, entry), join(TARGET_DIR, entry), { recursive: true });
+  if (entry !== "bin") {
+    cpSync(join(PKG_ROOT, entry), join(TARGET_DIR, entry), { recursive: true });
+    continue;
+  }
+  mkdirSync(join(TARGET_DIR, "bin"), { recursive: true });
+  for (const f of readdirSync(join(PKG_ROOT, "bin"))) {
+    if (BIN_SKIP.has(f)) continue;
+    cpSync(join(PKG_ROOT, "bin", f), join(TARGET_DIR, "bin", f), {
+      recursive: true,
+    });
+  }
 }
 // Also copy README + LICENSE if present (npm tarball includes them)
 for (const opt of ["README.md", "LICENSE"]) {

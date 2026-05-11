@@ -1,6 +1,6 @@
 {
   "name": "copilot-brag-sheet",
-  "description": "Auto-track AI coding sessions into a structured work impact log. Zero dependencies, local-first.",
+  "description": "Auto-track AI coding sessions into a structured work impact log. Local-first, MCP-conformant.",
   "author": {
     "name": "Microsoft",
     "url": "https://www.microsoft.com"

@@ -3,7 +3,7 @@
  *
  * Automatically tracks Copilot CLI sessions into structured JSON records
  * and provides tools for maintaining a personal work impact log.
- * Zero dependencies, cross-platform (Windows/macOS/Linux), Node 18+.
+ * Local-first, cross-platform (Windows/macOS/Linux), Node 18+.
  *
  * @license MIT
  * @see https://github.com/microsoft/copilot-brag-sheet

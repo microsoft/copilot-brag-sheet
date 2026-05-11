@@ -66,7 +66,7 @@ See [`docs/cross-engine-spec.md`](docs/cross-engine-spec.md).
 These are intentionally out of scope:
 
 - **Cloud storage backend** — local-first; use cloud sync (OneDrive/Dropbox) instead
-- **Runtime dependencies** — zero-dependency constraint is a feature
+- **Heavy runtime dependencies** — minimal-dep constraint is a feature; only the official MCP SDK + Zod are accepted (for spec conformance)
 - **Telemetry or analytics** — no data leaves your machine
 - **Multi-user features** — personal productivity tool
-- **In-product `update-notifier`** — would corrupt agent transcripts (extension stdio is the host's tool-output channel) AND breaks zero-deps promise. Use `npm update -g` instead.
+- **In-product `update-notifier`** — would corrupt agent transcripts (extension stdio is the host's tool-output channel) AND adds a runtime dep with no protocol-conformance benefit. Use `npm update -g` instead.

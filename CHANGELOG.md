@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-05-11
+
+### Added
+
+- **`copilot-brag-sheet-mcp` bin** — `mcp-server.mjs` is now a Model Context Protocol server exposing `save_to_brag_sheet`, `review_brag_sheet`, and `generate_work_log` over stdio. Any MCP host (Claude Desktop, Claude Code, custom hosts) can drive the brag sheet without Copilot CLI installed.
+- **`response_format` parameter on every MCP tool** — `"markdown"` (default) returns the same text the Copilot CLI extension produces; `"json"` returns the underlying record for programmatic callers.
+
+### Changed
+
+- **`generate_work_log` requires an absolute `outputPath`.** Relative paths are rejected at the schema layer so the tool can't silently write into the MCP host's working directory. The Copilot CLI extension already passes absolute paths, so this only affects direct MCP callers.
+- **New runtime dependencies:** `@modelcontextprotocol/sdk` and `zod`. Both are loaded only by `mcp-server.mjs`; `lib/` and `extension.mjs` stay dependency-free.
+
 ## [1.0.3] — 2026-05-01
 
 ### Fixed

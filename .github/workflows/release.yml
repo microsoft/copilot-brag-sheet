@@ -67,7 +67,9 @@ jobs:
             bin/mcp-server.mjs
             lib/config.mjs
             lib/git-backup.mjs
+            lib/heuristics.mjs
             lib/lock.mjs
+            lib/operations.mjs
             lib/paths.mjs
             lib/records.mjs
             lib/render.mjs

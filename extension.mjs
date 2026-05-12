@@ -155,7 +155,7 @@ const session = await joinSession({
         config = loadConfig(dataDir);
         // Let env vars override config.json for backward compat
         const envGitConfig = detectGitConfig();
-        gitConfig = envGitConfig.enabled ? envGitConfig : config.git;
+        gitConfig = envGitConfig.enabled ? envGitConfig : (config?.git ?? { enabled: false, push: false });
         firstPromptCaptured = false;
 
         // Initialize git repo in data dir if enabled

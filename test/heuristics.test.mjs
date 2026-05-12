@@ -170,6 +170,11 @@ describe("heuristics isBragRequest", () => {
     assert.ok(!isBragRequest("don't be a braggart"));
   });
 
+  it("detects brag even when bragging also appears in prompt", () => {
+    assert.ok(isBragRequest("bragging rights aside, brag about this fix"));
+    assert.ok(isBragRequest("don't be a braggart — brag about this"));
+  });
+
   it("does not trigger on unrelated text", () => {
     assert.ok(!isBragRequest("fix the login bug"));
     assert.ok(!isBragRequest("review my code"));

@@ -26,6 +26,9 @@ import {
   addFileToRecord, sanitize, dedupeArray,
 } from "../lib/records.mjs";
 import { renderMarkdown, renderReviewSummary } from "../lib/render.mjs";
+import {
+  isBragRequest, extractPrInfo, detectShellGitAction,
+} from "../lib/heuristics.mjs";
 
 // ── Test fixtures ───────────────────────────────────────────────────────────
 
@@ -315,69 +318,48 @@ describe("extension generate_work_log flow", () => {
 });
 
 // ── Brag keyword detection ──────────────────────────────────────────────────
+// Now tested comprehensively in test/heuristics.test.mjs via real imports.
+// Keep a smoke test here to verify extension-level integration.
 
 describe("extension brag keyword detection", () => {
-  const bragRegex = /\bbrag\b/i;
-  const excludeRegex = /brag(?:ging|gart)/i;
-
-  function shouldTriggerBrag(prompt) {
-    return bragRegex.test(prompt) && !excludeRegex.test(prompt);
-  }
-
   it("detects 'brag' as standalone word", () => {
-    assert.ok(shouldTriggerBrag("Save this to my brag sheet"));
-    assert.ok(shouldTriggerBrag("brag"));
-    assert.ok(shouldTriggerBrag("BRAG about this"));
+    assert.ok(isBragRequest("Save this to my brag sheet"));
+    assert.ok(isBragRequest("brag"));
   });
 
   it("excludes bragging and braggart", () => {
-    assert.ok(!shouldTriggerBrag("stop bragging"));
-    assert.ok(!shouldTriggerBrag("don't be a braggart"));
-  });
-
-  it("does not trigger on unrelated text", () => {
-    assert.ok(!shouldTriggerBrag("fix the login bug"));
-    assert.ok(!shouldTriggerBrag("review my code"));
+    assert.ok(!isBragRequest("stop bragging"));
+    assert.ok(!isBragRequest("don't be a braggart"));
   });
 });
 
 // ── PR info extraction ──────────────────────────────────────────────────────
+// Now tested comprehensively in test/heuristics.test.mjs via real imports.
+// Keep a smoke test here for extension-level integration.
 
 describe("extension PR info extraction", () => {
   it("extracts PR info from tool args", () => {
-    // Simulate the extractPrInfo logic inline (can't import from extension.mjs)
-    const toolArgs = { title: "fix: auth bug", owner: "org", repo: "api" };
-    const toolResult = { resultType: "success", textResultForLlm: '{"number": 42}' };
+    const args = { title: "fix: auth bug", owner: "org", repo: "api" };
+    const result = { resultType: "success", textResultForLlm: '{"number": 42}' };
 
-    const title = toolArgs.title || null;
-    const repo = toolArgs.repo
-      ? (toolArgs.owner ? `${toolArgs.owner}/${toolArgs.repo}` : toolArgs.repo)
-      : null;
-    const numMatch = toolResult.textResultForLlm.match(/"number":\s*(\d+)/);
-    const prId = numMatch ? parseInt(numMatch[1], 10) : null;
-
-    assert.equal(title, "fix: auth bug");
-    assert.equal(repo, "org/api");
-    assert.equal(prId, 42);
+    const info = extractPrInfo("github-create_pull_request", args, result);
+    assert.equal(info.title, "fix: auth bug");
+    assert.equal(info.repo, "org/api");
+    assert.equal(info.id, 42);
   });
 
   it("returns null on failure result", () => {
-    const toolResult = { resultType: "failure", textResultForLlm: "Error" };
-    assert.equal(toolResult.resultType, "failure");
-    // extractPrInfo returns null for failures
+    const args = { title: "fix" };
+    const result = { resultType: "failure", textResultForLlm: "Error" };
+    assert.equal(extractPrInfo("github-create_pull_request", args, result), null);
   });
 });
 
 // ── Git action detection ────────────────────────────────────────────────────
+// Now tested comprehensively in test/heuristics.test.mjs via real imports.
+// Keep a smoke test here for extension-level integration.
 
 describe("extension git action detection from shell commands", () => {
-  function detectShellGitAction(command) {
-    if (!command) return null;
-    if (/\bgit\s+commit\b/i.test(command)) return "git commit";
-    if (/\bgit\s+push\b/i.test(command)) return "git push";
-    return null;
-  }
-
   it("detects git commit", () => {
     assert.equal(detectShellGitAction('git commit -m "fix"'), "git commit");
   });
@@ -388,18 +370,11 @@ describe("extension git action detection from shell commands", () => {
 
   it("returns null for non-git commands", () => {
     assert.equal(detectShellGitAction("npm test"), null);
-    assert.equal(detectShellGitAction("ls -la"), null);
   });
 
   it("returns null for empty/null commands", () => {
     assert.equal(detectShellGitAction(null), null);
     assert.equal(detectShellGitAction(""), null);
-  });
-
-  it("only detects commit and push (not merge/rebase/tag)", () => {
-    assert.equal(detectShellGitAction("git merge main"), null);
-    assert.equal(detectShellGitAction("git rebase -i HEAD~3"), null);
-    assert.equal(detectShellGitAction("git tag v1.0"), null);
   });
 });
 

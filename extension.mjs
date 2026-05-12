@@ -21,7 +21,7 @@ import {
 import { detectDataDir, detectBragSheetPath, detectGitConfig, ensureDir } from "./lib/paths.mjs";
 import { loadConfig, getAllCategoryIds, isValidCategory, buildUserContext } from "./lib/config.mjs";
 import {
-  writeRecord, readRecords, updateRecord, logError,
+  writeRecord, readRecords, updateRecord, logError, atomicWriteText,
 } from "./lib/storage.mjs";
 import { backupToGit, ensureGitRepo, addRemote } from "./lib/git-backup.mjs";
 import {
@@ -34,6 +34,9 @@ import {
   extractFilePath, extractPrInfo, detectShellGitAction, isBragRequest,
   classifyToolUse,
 } from "./lib/heuristics.mjs";
+import {
+  saveBragEntry, reviewBragEntries, generateWorkLog,
+} from "./lib/operations.mjs";
 
 // Debug: log to stderr at module load time so we can verify the host actually loaded us.
 // Gated on env var to avoid noise in normal sessions. Set BRAG_SHEET_DEBUG=1 to enable.
@@ -120,24 +123,7 @@ async function recoverOrphans(dir) {
   }
 }
 
-function atomicWriteText(filePath, text) {
-  const tmpPath = `${filePath}.tmp.${process.pid}`;
-  let fd;
-  try {
-    fd = openSync(tmpPath, "w");
-    writeFileSync(fd, text, "utf8");
-    fsyncSync(fd);
-    closeSync(fd);
-    fd = undefined;
-    renameSync(tmpPath, filePath);
-  } catch (err) {
-    if (fd !== undefined) {
-      try { closeSync(fd); } catch { /* noop */ }
-    }
-    try { unlinkSync(tmpPath); } catch { /* noop */ }
-    throw err;
-  }
-}
+// atomicWriteText is now in lib/storage.mjs
 
 /** Lazy-init dataDir, config, and gitConfig if onSessionStart failed. */
 function ensureInitialized() {
@@ -371,39 +357,23 @@ const session = await joinSession({
         try {
           ensureInitialized();
 
-          if (!args.summary?.trim()) {
-            return {
-              textResultForLlm: "Error: summary is required and cannot be empty",
-              resultType: "failure",
-            };
-          }
-
-          if (args.category && !isValidCategory(config, args.category)) {
-            const valid = getAllCategoryIds(config).join(", ");
-            return {
-              textResultForLlm: `Error: invalid category "${args.category}". Valid: ${valid}`,
-              resultType: "failure",
-            };
-          }
-
-          const entry = createEntryRecord({
-            summary: args.summary,
-            category: args.category || null,
-            impact: args.impact || null,
-            tags: args.tags || [],
+          const result = saveBragEntry({
+            ...args,
             repo: args.repo || sessionRecord?.repo || null,
             branch: args.branch || sessionRecord?.branch || null,
             sessionId: sessionRecord?.id || invocation.sessionId || null,
-          });
+          }, { dataDir, config, gitConfig });
 
-          writeRecord(dataDir, entry);
+          if (!result.ok) {
+            return {
+              textResultForLlm: `Error: ${result.message}`,
+              resultType: "failure",
+            };
+          }
 
-          // Fire-and-forget git backup
-          backupToGit({ dataDir, gitConfig }).catch(() => {});
-
-          const label = args.category ? ` [${args.category}]` : "";
-          await session.log(`📊 Saved to brag sheet: ${entry.summary}`);
-          return `✅ Entry saved to brag sheet${label}: "${entry.summary}"`;
+          const label = result.entry.category ? ` [${result.entry.category}]` : "";
+          await session.log(`📊 Saved to brag sheet: ${result.entry.summary}`);
+          return `✅ Entry saved to brag sheet${label}: "${result.entry.summary}"`;
         } catch (err) {
           logError(dataDir, "save_to_brag_sheet", err);
           return {
@@ -434,19 +404,12 @@ const session = await joinSession({
         try {
           ensureInitialized();
 
-          const weeks = args.weeks ?? 4;
-          const records = readRecords(dataDir, {
-            since: new Date(Date.now() - weeks * 7 * 86400000).toISOString(),
-          });
-          const markdown = renderReviewSummary(records, {
-            weeks,
-            config,
-          });
-          const result = markdown || "No entries found for the requested period.";
+          const result = reviewBragEntries(args, { dataDir, config });
+          const markdown = result.markdown || "No entries found for the requested period.";
           const prefix = config?.preset === "microsoft"
             ? "_Formatted for Connect review. Use impact framing: Did X → Result Y → Evidence Z._\n\n"
             : "";
-          return `${prefix}${result}`;
+          return `${prefix}${markdown}`;
         } catch (err) {
           logError(dataDir, "review_brag_sheet", err);
           return {
@@ -476,17 +439,8 @@ const session = await joinSession({
         try {
           ensureInitialized();
 
-          const records = readRecords(dataDir);
-          const markdown = renderMarkdown(records, { config });
-
-          const outputPath = args.outputPath || detectBragSheetPath(dataDir);
-          ensureDir(path.dirname(outputPath));
-          atomicWriteText(outputPath, markdown);
-
-          // Fire-and-forget git backup
-          backupToGit({ dataDir, gitConfig }).catch(() => {});
-
-          return `✅ Work log generated: ${outputPath} (${records.length} records)`;
+          const result = generateWorkLog(args, { dataDir, config, gitConfig });
+          return `✅ Work log generated: ${result.outputPath} (${result.recordCount} records)`;
         } catch (err) {
           logError(dataDir, "generate_work_log", err);
           return {

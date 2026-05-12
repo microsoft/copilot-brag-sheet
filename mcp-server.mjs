@@ -28,21 +28,19 @@
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  openSync, closeSync, writeFileSync, fsyncSync,
-  renameSync, unlinkSync, readFileSync, statSync,
-} from "node:fs";
+import { readFileSync } from "node:fs";
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-import { detectDataDir, detectBragSheetPath, detectGitConfig, ensureDir } from "./lib/paths.mjs";
-import { loadConfig, getAllCategoryIds, isValidCategory } from "./lib/config.mjs";
-import { writeRecord, readRecords, logError } from "./lib/storage.mjs";
-import { backupToGit } from "./lib/git-backup.mjs";
-import { createEntryRecord } from "./lib/records.mjs";
-import { renderMarkdown, renderReviewSummary } from "./lib/render.mjs";
+import { detectDataDir, detectGitConfig, ensureDir } from "./lib/paths.mjs";
+import { loadConfig } from "./lib/config.mjs";
+import { logError } from "./lib/storage.mjs";
+import { renderReviewSummary } from "./lib/render.mjs";
+import {
+  saveBragEntry, reviewBragEntries, generateWorkLog,
+} from "./lib/operations.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -88,24 +86,7 @@ function ensureInitialized() {
   }
 }
 
-function atomicWriteText(filePath, text) {
-  const tmpPath = `${filePath}.tmp.${process.pid}`;
-  let fd;
-  try {
-    fd = openSync(tmpPath, "w");
-    writeFileSync(fd, text, "utf8");
-    fsyncSync(fd);
-    closeSync(fd);
-    fd = undefined;
-    renameSync(tmpPath, filePath);
-  } catch (err) {
-    if (fd !== undefined) {
-      try { closeSync(fd); } catch { /* noop */ }
-    }
-    try { unlinkSync(tmpPath); } catch { /* noop */ }
-    throw err;
-  }
-}
+// atomicWriteText is now in lib/storage.mjs
 
 function truncateMarkdown(markdown) {
   if (typeof markdown !== "string" || markdown.length <= CHARACTER_LIMIT) {
@@ -271,21 +252,7 @@ function renderReviewMarkdown({ records, weeks, total, offset, hasMore }) {
 async function handleSaveToBragSheet(args) {
   ensureInitialized();
 
-  if (args.category && !isValidCategory(config, args.category)) {
-    const valid = getAllCategoryIds(config).join(", ");
-    return toolError(
-      `invalid category "${args.category}". Valid: ${valid}`,
-      {
-        success: false,
-        entryId: "",
-        category: args.category,
-        summary: args.summary,
-        timestamp: new Date().toISOString(),
-      },
-    );
-  }
-
-  const entry = createEntryRecord({
+  const result = saveBragEntry({
     summary: args.summary,
     category: args.category || null,
     impact: args.impact || null,
@@ -293,24 +260,32 @@ async function handleSaveToBragSheet(args) {
     repo: args.repo || null,
     branch: args.branch || null,
     sessionId: null,
-  });
+  }, { dataDir, config, gitConfig });
 
-  writeRecord(dataDir, entry);
-
-  // Fire-and-forget git backup — never block the tool response on network I/O.
-  backupToGit({ dataDir, gitConfig }).catch(() => {});
+  if (!result.ok) {
+    return toolError(
+      result.message,
+      {
+        success: false,
+        entryId: "",
+        category: args.category || null,
+        summary: args.summary,
+        timestamp: new Date().toISOString(),
+      },
+    );
+  }
 
   const structuredContent = {
     success: true,
-    entryId: entry.id,
-    category: entry.category,
-    summary: entry.summary,
-    timestamp: entry.timestamp,
+    entryId: result.entry.id,
+    category: result.entry.category,
+    summary: result.entry.summary,
+    timestamp: result.entry.timestamp,
   };
 
   const text = args.response_format === "json"
     ? JSON.stringify(structuredContent, null, 2)
-    : renderSavedMarkdown(entry);
+    : renderSavedMarkdown(result.entry);
 
   return toolText(text, structuredContent);
 }
@@ -322,11 +297,10 @@ async function handleReviewBragSheet(args) {
   const limit = args.limit ?? DEFAULT_REVIEW_LIMIT;
   const offset = args.offset ?? 0;
 
-  const allRecords = readRecords(dataDir, {
-    since: new Date(Date.now() - weeks * 7 * 86400000).toISOString(),
-  });
+  const result = reviewBragEntries({ weeks }, { dataDir, config });
 
-  // Newest first so paging mirrors how reviewers read the log.
+  // MCP-specific: sort newest-first, apply pagination
+  const allRecords = result.records;
   allRecords.sort((a, b) => (a.timestamp < b.timestamp ? 1 : a.timestamp > b.timestamp ? -1 : 0));
 
   const total = allRecords.length;
@@ -364,29 +338,18 @@ async function handleReviewBragSheet(args) {
 async function handleGenerateWorkLog(args) {
   ensureInitialized();
 
-  const records = readRecords(dataDir);
-  const markdown = renderMarkdown(records, { config });
-
-  const outputPath = args.outputPath || detectBragSheetPath(dataDir);
-  ensureDir(path.dirname(outputPath));
-  atomicWriteText(outputPath, markdown);
-
-  // Fire-and-forget git backup.
-  backupToGit({ dataDir, gitConfig }).catch(() => {});
-
-  let bytesWritten = 0;
-  try { bytesWritten = statSync(outputPath).size; } catch { /* noop */ }
+  const result = generateWorkLog(args, { dataDir, config, gitConfig });
 
   const structuredContent = {
     success: true,
-    outputPath,
-    recordCount: records.length,
-    bytesWritten,
+    outputPath: result.outputPath,
+    recordCount: result.recordCount,
+    bytesWritten: result.bytesWritten,
   };
 
   const text = args.response_format === "json"
     ? JSON.stringify(structuredContent, null, 2)
-    : `✅ Work log generated: ${outputPath} (${records.length} records, ${bytesWritten} bytes)`;
+    : `✅ Work log generated: ${result.outputPath} (${result.recordCount} records, ${result.bytesWritten} bytes)`;
 
   return toolText(text, structuredContent);
 }

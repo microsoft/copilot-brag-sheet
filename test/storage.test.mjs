@@ -12,6 +12,7 @@ import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import {
   atomicWriteJSON,
+  atomicWriteText,
   writeRecord,
   readRecords,
   updateRecord,
@@ -268,4 +269,29 @@ test("readRecords ignores files outside the requested shard range", () => {
     }).map((record) => record.id),
     ["match"],
   );
+});
+
+test("atomicWriteText writes correct content and cleans temporary files", () => {
+  const tempDir = makeTempDir();
+  const filePath = join(tempDir, "test-output.md");
+
+  atomicWriteText(filePath, "# Hello\n\nSome markdown content.");
+
+  assert.ok(existsSync(filePath));
+  assert.equal(readFileSync(filePath, "utf8"), "# Hello\n\nSome markdown content.");
+
+  // No stale tmp file left behind
+  const files = readdirSync(tempDir);
+  assert.ok(!files.some(f => f.includes(".tmp.")));
+});
+
+test("atomicWriteText overwrites existing file atomically", () => {
+  const tempDir = makeTempDir();
+  const filePath = join(tempDir, "overwrite.md");
+
+  atomicWriteText(filePath, "version 1");
+  assert.equal(readFileSync(filePath, "utf8"), "version 1");
+
+  atomicWriteText(filePath, "version 2");
+  assert.equal(readFileSync(filePath, "utf8"), "version 2");
 });

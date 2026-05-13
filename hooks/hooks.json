@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "node ${PLUGIN_ROOT}/hooks/post-tool-use.mjs",
+        "timeout": 5,
+        "description": "Classify tool calls and track files, PRs, and git actions to the brag sheet"
+      }
+    ]
+  }
+}

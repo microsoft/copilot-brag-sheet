@@ -1,7 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "copilot-brag-sheet",
-  "version": "1.0.3",
   "description": "Auto-track AI coding sessions into a structured work impact log. Local-first, MCP-conformant. Cross-engine: Claude Code, Copilot CLI, Codex CLI, Cursor, Agency.",
   "author": {
     "name": "Microsoft",
@@ -17,6 +16,7 @@
     "performance-review",
     "local-first"
   ],
+  "hooks": "hooks/hooks.json",
   "skills": [
     "./skills/brag-sheet/SKILL.md"
   ],

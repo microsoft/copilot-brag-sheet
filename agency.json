@@ -1,0 +1,13 @@
+{
+  "engines": {
+    "agency": ">=1.0.0"
+  },
+  "category": "developer-tools",
+  "description": "Auto-track AI coding sessions into a structured work impact log. Local-first, zero telemetry.",
+  "governance": {
+    "layer": 4,
+    "certification": "draft",
+    "organization": "Microsoft",
+    "teamScope": ["microsoft/copilot-brag-sheet-maintainers"]
+  }
+}

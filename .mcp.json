@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "brag-sheet": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/mcp-server.mjs"],
+      "description": "Save, review, and export brag-sheet entries via MCP."
+    }
+  }
+}

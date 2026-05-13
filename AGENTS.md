@@ -77,8 +77,10 @@ Copilot CLI host  ──spawns──▶  extension.mjs (joinSession)
 |---|---|---|
 | [`paths.mjs`](lib/paths.mjs) | OS-native data dir + path helpers; respects `WORK_TRACKER_DIR` / `XDG_DATA_HOME` / `LOCALAPPDATA`. | `detectDataDir`, `detectBragSheetPath`, `detectGitConfig`, `ensureDir` |
 | [`config.mjs`](lib/config.mjs) | Loads `config.json`, merges with defaults, surfaces `microsoft` preset context. | `loadConfig`, `getAllCategoryIds`, `isValidCategory`, `buildUserContext`, `DEFAULT_CONFIG` |
+| [`heuristics.mjs`](lib/heuristics.mjs) | Tool classification sets, PR/file/git extraction helpers, brag keyword detection, composite `classifyToolUse`. | `FILE_CREATE_TOOLS`, `FILE_EDIT_TOOLS`, `PR_TOOLS`, `SHELL_TOOLS`, `extractFilePath`, `extractPrInfo`, `detectShellGitAction`, `isBragRequest`, `classifyToolUse` |
+| [`operations.mjs`](lib/operations.mjs) | Shared validate→create→persist→backup orchestration for all three tools. Returns `{ ok: true/false }` discriminated results. | `saveBragEntry`, `reviewBragEntries`, `generateWorkLog` |
 | [`lock.mjs`](lib/lock.mjs) | Cross-platform PID-aware file lock (`O_EXCL` create + stale-process detection). | `withFileLock` |
-| [`storage.mjs`](lib/storage.mjs) | Atomic JSON writes (tmp → fsync → rename), shard-aware reads, `updateRecord` under lock. | `atomicWriteJSON`, `writeRecord`, `readRecords`, `updateRecord`, `logError` |
+| [`storage.mjs`](lib/storage.mjs) | Atomic JSON/text writes (tmp → fsync → rename), shard-aware reads, `updateRecord` under lock. | `atomicWriteJSON`, `atomicWriteText`, `writeRecord`, `readRecords`, `updateRecord`, `logError` |
 | [`records.mjs`](lib/records.mjs) | Record factories, sanitization, dedupe, file-path normalization. | `createSessionRecord`, `createEntryRecord`, `addFileToRecord`, `sanitize`, `dedupeArray` |
 | [`render.mjs`](lib/render.mjs) | JSON records → grouped Markdown (`work-log.md`, review summaries). | `weekOf`, `renderMarkdown`, `renderReviewSummary` |
 | [`git-backup.mjs`](lib/git-backup.mjs) | Optional git init / commit / push of the data dir; sessions excluded via auto-generated `.gitignore`. | `ensureGitRepo`, `addRemote`, `hasRemote`, `backupToGit`, `createGitRunner` |
@@ -107,7 +109,7 @@ This repo has **no build step** (ESM runs directly on Node 18+) and **no
 linter configured** today. The full toolbox is `node --test`.
 
 ```bash
-# Run all 107 tests (ubuntu/macos/windows × Node 18/20/22 in CI)
+# Run all 177 tests (ubuntu/macos/windows × Node 18/20/22 in CI)
 npm test
 
 # Run a single test file
@@ -162,8 +164,8 @@ real bug reports). Don't change them without an issue and discussion first.
 - **Atomic JSON writes.** All disk writes go through
   [`atomicWriteJSON`](lib/storage.mjs) (`open` → `writeFile` → `fsyncSync` →
   `closeSync` → `renameSync`, with `unlinkSync` cleanup on failure).
-  See `lib/storage.mjs:216-244`. The same pattern is duplicated for text in
-  `extension.mjs:118-135` (`atomicWriteText`) — keep them in sync.
+  Text writes use `atomicWriteText` in the same module. Both live in
+  `lib/storage.mjs`.
 - **File locking for concurrent writers.** Multi-process safety uses
   [`withFileLock`](lib/lock.mjs) — `O_EXCL` create + PID written into the
   lockfile + 30s stale detection via `process.kill(pid, 0)`. Use it any
@@ -200,20 +202,24 @@ real bug reports). Don't change them without an issue and discussion first.
 
 ## 5. Testing strategy
 
-Current state: **107 tests, all green, run cross-platform in CI.** Counts
+Current state: **177 tests, all green, run cross-platform in CI.** Counts
 per file (verify with `Select-String -Pattern '^\s*it\('`):
 
 | File | Tests | Covers |
 |---|---:|---|
-| `test/extension.test.mjs` | 34 | Pure helpers extracted from `extension.mjs` (record lifecycle, file tracking, brag detection, PR extraction). Hooks themselves are not unit-tested — see below. |
-| `test/git-backup.test.mjs` | 18 | `ensureGitRepo`, `addRemote`, `backupToGit` with a mocked `git` runner. |
+| `test/heuristics.test.mjs` | 34 | Tool classification sets, extractFilePath, extractPrInfo, detectShellGitAction, isBragRequest (incl. mixed-prompt regression), classifyToolUse. |
+| `test/extension.test.mjs` | 32 | Session record lifecycle, file tracking, significant actions, manual entry creation, review/generate flow, brag/PR/git smoke tests (importing from lib/heuristics.mjs). |
+| `test/git-backup.test.mjs` | 19 | `ensureGitRepo`, `addRemote`, `backupToGit` with a mocked `git` runner. |
+| `test/mcp-server.test.mjs` | 18 | MCP server tool handlers via buildServer(), Zod validation, pagination, structured output. |
+| `test/operations.test.mjs` | 16 | Shared saveBragEntry, reviewBragEntries, generateWorkLog with real disk I/O. |
 | `test/render.test.mjs` | 14 | Markdown rendering, week boundaries (UTC), category grouping, escaping. |
-| `test/storage.test.mjs` | 10 | Atomic writes, shard layout, filter semantics, update flow. |
+| `test/storage.test.mjs` | 12 | Atomic JSON/text writes, shard layout, filter semantics, update flow. |
 | `test/config.test.mjs` | 9 | Default merge, microsoft preset, category resolution. |
 | `test/records.test.mjs` | 8 | Record factories, sanitization, file-path dedup. |
 | `test/paths.test.mjs` | 7 | Per-platform data dir resolution, env-var overrides. |
 | `test/lock.test.mjs` | 7 | Lock acquisition, stale-PID cleanup, contention. |
-| **Total** | **107** | |
+| `test/pack-smoke.test.mjs` | 1 | Tarball validation, install simulation. |
+| **Total** | **177** | |
 
 **What's covered:**
 
@@ -355,11 +361,13 @@ proving distribution conversion before fanning out further.
 
 | Path | Purpose | Modify when... |
 |---|---|---|
-| `extension.mjs` | Copilot CLI entry point: hooks + tools. **Only file that imports the SDK.** | Adding a hook or tool. Wiring new lib functionality into the host. |
+| `extension.mjs` | Copilot CLI entry point: hooks + tools. **Only file that imports the SDK.** Delegates to `lib/*` for all logic. | Adding a hook or tool. Wiring new lib functionality into the host. |
 | `lib/paths.mjs` | OS-native data dir; env-var overrides. | Adding a new path target or platform. |
 | `lib/config.mjs` | Default config + presets + category management. | Adding a preset or default category. |
+| `lib/heuristics.mjs` | Tool classification sets, extraction helpers, brag keyword detection, composite `classifyToolUse`. | Adding a new tool type to track, changing brag-trigger behavior. |
+| `lib/operations.mjs` | Shared save/review/generate orchestration with `{ ok }` returns. Used by extension.mjs, mcp-server.mjs, and future Agency hooks. | Changing save/review/generate behavior across all surfaces. |
 | `lib/lock.mjs` | PID-aware file lock. | Don't, unless you have a strong reason. Battle-tested. |
-| `lib/storage.mjs` | Atomic JSON I/O, shard reads, `updateRecord`. | Adding a new record type or query filter. |
+| `lib/storage.mjs` | Atomic JSON/text I/O, shard reads, `updateRecord`. | Adding a new record type or query filter. |
 | `lib/records.mjs` | Record factories, `sanitize`, `addFileToRecord`. | Changing the record schema (and read §10 first). |
 | `lib/render.mjs` | Records → Markdown. Reserved markers live here. | Changing the work-log Markdown layout. |
 | `lib/git-backup.mjs` | Optional git init/commit/push of data dir. | Adding remote types, fixing git edge cases. |

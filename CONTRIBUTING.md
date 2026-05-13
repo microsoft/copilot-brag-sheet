@@ -30,16 +30,20 @@ npm install
 
 ```
 extension.mjs        ← Copilot CLI entry point (hooks + tools)
+mcp-server.mjs       ← MCP stdio server (cross-engine)
 lib/
   paths.mjs          ← Data directory detection, path helpers
   config.mjs         ← Config loading and category management
+  heuristics.mjs     ← Tool classification, event detection, brag keyword
+  operations.mjs     ← Shared save/review/generate orchestration
   lock.mjs           ← File locking for concurrent access
-  storage.mjs        ← Atomic JSON read/write, record CRUD
+  storage.mjs        ← Atomic JSON/text read/write, record CRUD
   records.mjs        ← Record creation, sanitization, file tracking
   render.mjs         ← Markdown rendering
   git-backup.mjs     ← Git version history and remote sync
 bin/
   setup.mjs          ← Interactive setup wizard
+  mcp-server.mjs     ← MCP server bin entry point
 install.sh           ← macOS/Linux installer
 install.ps1          ← Windows installer
 plugin.json          ← Copilot CLI plugin manifest

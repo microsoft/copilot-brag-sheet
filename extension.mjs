@@ -14,21 +14,24 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import {
   existsSync as fileExists,
-  openSync, closeSync, writeFileSync, readFileSync as readFile, fsyncSync,
-  renameSync, unlinkSync,
+  readFileSync as readFile,
+  unlinkSync,
 } from "node:fs";
 
-import { detectDataDir, detectBragSheetPath, detectGitConfig, ensureDir } from "./lib/paths.mjs";
-import { loadConfig, getAllCategoryIds, isValidCategory, buildUserContext } from "./lib/config.mjs";
+import { detectDataDir, detectGitConfig, ensureDir } from "./lib/paths.mjs";
+import { loadConfig, getAllCategoryIds, buildUserContext } from "./lib/config.mjs";
 import {
   writeRecord, readRecords, updateRecord, logError,
 } from "./lib/storage.mjs";
-import { backupToGit, ensureGitRepo, addRemote } from "./lib/git-backup.mjs";
+import { ensureGitRepo, addRemote } from "./lib/git-backup.mjs";
 import {
-  createSessionRecord, createEntryRecord,
+  createSessionRecord,
   addFileToRecord, sanitize, dedupeArray,
 } from "./lib/records.mjs";
-import { renderMarkdown, renderReviewSummary } from "./lib/render.mjs";
+import { isBragRequest, classifyToolUse } from "./lib/heuristics.mjs";
+import {
+  saveBragEntry, reviewBragEntries, generateWorkLog,
+} from "./lib/operations.mjs";
 
 // Debug: log to stderr at module load time so we can verify the host actually loaded us.
 // Gated on env var to avoid noise in normal sessions. Set BRAG_SHEET_DEBUG=1 to enable.
@@ -115,25 +118,6 @@ async function recoverOrphans(dir) {
   }
 }
 
-function atomicWriteText(filePath, text) {
-  const tmpPath = `${filePath}.tmp.${process.pid}`;
-  let fd;
-  try {
-    fd = openSync(tmpPath, "w");
-    writeFileSync(fd, text, "utf8");
-    fsyncSync(fd);
-    closeSync(fd);
-    fd = undefined;
-    renameSync(tmpPath, filePath);
-  } catch (err) {
-    if (fd !== undefined) {
-      try { closeSync(fd); } catch { /* noop */ }
-    }
-    try { unlinkSync(tmpPath); } catch { /* noop */ }
-    throw err;
-  }
-}
-
 /** Lazy-init dataDir, config, and gitConfig if onSessionStart failed. */
 function ensureInitialized() {
   if (!dataDir) {
@@ -148,48 +132,7 @@ function ensureInitialized() {
   }
 }
 
-// ── Tool classification ─────────────────────────────────────────────────────
-
-const FILE_CREATE_TOOLS = new Set(["create", "create_file"]);
-const FILE_EDIT_TOOLS = new Set(["edit", "edit_file", "str_replace_editor"]);
-const PR_TOOLS = new Set([
-  "github-create_pull_request",
-  "github-create_pull_request_with_copilot",
-  "ado-corp-repo_create_pull_request",
-]);
-const SHELL_TOOLS = new Set(["powershell", "bash"]);
-
-function extractFilePath(toolArgs) {
-  return toolArgs?.path || null;
-}
-
-function extractPrInfo(toolName, toolArgs, toolResult) {
-  if (toolResult?.resultType === "failure") return null;
-
-  const title = toolArgs?.title || null;
-  const repo = toolArgs?.repo
-    ? (toolArgs.owner ? `${toolArgs.owner}/${toolArgs.repo}` : toolArgs.repo)
-    : null;
-
-  // Try structured result fields first
-  const resultText = typeof toolResult?.textResultForLlm === "string"
-    ? toolResult.textResultForLlm : "";
-  const numMatch = resultText.match(/"number":\s*(\d+)/)
-    || resultText.match(/pullRequestId["\s:]+(\d+)/i);
-  const prId = numMatch ? parseInt(numMatch[1], 10) : null;
-
-  if (title || prId) {
-    return { id: prId, title: title || "(untitled)", repo };
-  }
-  return null;
-}
-
-function detectShellGitAction(command) {
-  if (!command) return null;
-  if (/\bgit\s+commit\b/i.test(command)) return "git commit";
-  if (/\bgit\s+push\b/i.test(command)) return "git push";
-  return null;
-}
+// Tool classification sets and helpers are now in lib/heuristics.mjs
 
 // ── Extension entry point ───────────────────────────────────────────────────
 
@@ -205,7 +148,7 @@ const session = await joinSession({
         config = loadConfig(dataDir);
         // Let env vars override config.json for backward compat
         const envGitConfig = detectGitConfig();
-        gitConfig = envGitConfig.enabled ? envGitConfig : config.git;
+        gitConfig = envGitConfig.enabled ? envGitConfig : (config?.git ?? { enabled: false, push: false });
         firstPromptCaptured = false;
 
         // Initialize git repo in data dir if enabled
@@ -264,8 +207,8 @@ const session = await joinSession({
         // Build user preference context (injected BEFORE tool selection)
         const userCtx = buildUserContext(config);
 
-        // "brag" keyword detection
-        if (/\bbrag\b/i.test(input.prompt)) {
+        // "brag" keyword detection (heuristic from lib/heuristics.mjs)
+        if (isBragRequest(input.prompt)) {
           const bragContext = [
             "The user wants to save work to their brag sheet.",
             "Summarize what was accomplished and call the `save_to_brag_sheet` tool.",
@@ -290,50 +233,34 @@ const session = await joinSession({
       try {
         if (!sessionRecord || !dataDir) return;
 
-        const { toolName, toolArgs, toolResult } = input;
+        const classification = classifyToolUse(input);
         let changed = false;
 
-        // File operations (local creates and edits)
-        if (FILE_CREATE_TOOLS.has(toolName) || FILE_EDIT_TOOLS.has(toolName)) {
-          const filePath = extractFilePath(toolArgs);
-          if (filePath) {
-            addFileToRecord(sessionRecord, toolName, filePath, repoRoot);
-            changed = true;
-          }
+        // File operations — apply to session record with repo-relative paths
+        for (const filePath of classification.filesCreated) {
+          addFileToRecord(sessionRecord, "create", filePath, repoRoot);
+          changed = true;
         }
-
-        // PR creation
-        if (PR_TOOLS.has(toolName)) {
-          const prInfo = extractPrInfo(toolName, toolArgs, toolResult);
-          if (prInfo) {
-            const existing = sessionRecord.prsCreated || [];
-            if (!existing.some(p => p.id === prInfo.id && p.repo === prInfo.repo)) {
-              sessionRecord.prsCreated = [...existing, prInfo];
-            }
-            sessionRecord.significantActions = dedupeArray([
-              ...sessionRecord.significantActions, "pr created",
-            ]);
-            changed = true;
-          }
-        }
-
-        // Remote file push (tracked as "git push")
-        if (toolName === "github-push_files") {
-          sessionRecord.significantActions = dedupeArray([
-            ...sessionRecord.significantActions, "git push",
-          ]);
+        for (const filePath of classification.filesEdited) {
+          addFileToRecord(sessionRecord, "edit", filePath, repoRoot);
           changed = true;
         }
 
-        // Shell-based git operations
-        if (SHELL_TOOLS.has(toolName)) {
-          const action = detectShellGitAction(toolArgs?.command);
-          if (action) {
-            sessionRecord.significantActions = dedupeArray([
-              ...sessionRecord.significantActions, action,
-            ]);
-            changed = true;
+        // PR creation — dedupe by id+repo
+        for (const prInfo of classification.prsCreated) {
+          const existing = sessionRecord.prsCreated || [];
+          if (!existing.some(p => p.id === prInfo.id && p.repo === prInfo.repo)) {
+            sessionRecord.prsCreated = [...existing, prInfo];
           }
+          changed = true;
+        }
+
+        // Significant actions — dedupe
+        for (const action of classification.significantActions) {
+          sessionRecord.significantActions = dedupeArray([
+            ...sessionRecord.significantActions, action,
+          ]);
+          changed = true;
         }
 
         // Incremental save (crash-safe)
@@ -423,39 +350,23 @@ const session = await joinSession({
         try {
           ensureInitialized();
 
-          if (!args.summary?.trim()) {
-            return {
-              textResultForLlm: "Error: summary is required and cannot be empty",
-              resultType: "failure",
-            };
-          }
-
-          if (args.category && !isValidCategory(config, args.category)) {
-            const valid = getAllCategoryIds(config).join(", ");
-            return {
-              textResultForLlm: `Error: invalid category "${args.category}". Valid: ${valid}`,
-              resultType: "failure",
-            };
-          }
-
-          const entry = createEntryRecord({
-            summary: args.summary,
-            category: args.category || null,
-            impact: args.impact || null,
-            tags: args.tags || [],
+          const result = saveBragEntry({
+            ...args,
             repo: args.repo || sessionRecord?.repo || null,
             branch: args.branch || sessionRecord?.branch || null,
             sessionId: sessionRecord?.id || invocation.sessionId || null,
-          });
+          }, { dataDir, config, gitConfig });
 
-          writeRecord(dataDir, entry);
+          if (!result.ok) {
+            return {
+              textResultForLlm: `Error: ${result.message}`,
+              resultType: "failure",
+            };
+          }
 
-          // Fire-and-forget git backup
-          backupToGit({ dataDir, gitConfig }).catch(() => {});
-
-          const label = args.category ? ` [${args.category}]` : "";
-          await session.log(`📊 Saved to brag sheet: ${entry.summary}`);
-          return `✅ Entry saved to brag sheet${label}: "${entry.summary}"`;
+          const label = result.entry.category ? ` [${result.entry.category}]` : "";
+          await session.log(`📊 Saved to brag sheet: ${result.entry.summary}`);
+          return `✅ Entry saved to brag sheet${label}: "${result.entry.summary}"`;
         } catch (err) {
           logError(dataDir, "save_to_brag_sheet", err);
           return {
@@ -486,19 +397,12 @@ const session = await joinSession({
         try {
           ensureInitialized();
 
-          const weeks = args.weeks ?? 4;
-          const records = readRecords(dataDir, {
-            since: new Date(Date.now() - weeks * 7 * 86400000).toISOString(),
-          });
-          const markdown = renderReviewSummary(records, {
-            weeks,
-            config,
-          });
-          const result = markdown || "No entries found for the requested period.";
+          const result = reviewBragEntries(args, { dataDir, config });
+          const markdown = result.markdown || "No entries found for the requested period.";
           const prefix = config?.preset === "microsoft"
             ? "_Formatted for Connect review. Use impact framing: Did X → Result Y → Evidence Z._\n\n"
             : "";
-          return `${prefix}${result}`;
+          return `${prefix}${markdown}`;
         } catch (err) {
           logError(dataDir, "review_brag_sheet", err);
           return {
@@ -528,17 +432,8 @@ const session = await joinSession({
         try {
           ensureInitialized();
 
-          const records = readRecords(dataDir);
-          const markdown = renderMarkdown(records, { config });
-
-          const outputPath = args.outputPath || detectBragSheetPath(dataDir);
-          ensureDir(path.dirname(outputPath));
-          atomicWriteText(outputPath, markdown);
-
-          // Fire-and-forget git backup
-          backupToGit({ dataDir, gitConfig }).catch(() => {});
-
-          return `✅ Work log generated: ${outputPath} (${records.length} records)`;
+          const result = generateWorkLog(args, { dataDir, config, gitConfig });
+          return `✅ Work log generated: ${result.outputPath} (${result.recordCount} records)`;
         } catch (err) {
           logError(dataDir, "generate_work_log", err);
           return {

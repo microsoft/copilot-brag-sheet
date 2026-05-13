@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Changed
+
+- **Extracted `lib/heuristics.mjs`** — tool classification sets, extraction helpers (`extractPrInfo`, `detectShellGitAction`), brag keyword detection (`isBragRequest`), and composite `classifyToolUse()` are now importable from any entry point. `extension.mjs` imports from this module instead of defining them inline.
+- **Extracted `lib/operations.mjs`** — shared `saveBragEntry`, `reviewBragEntries`, and `generateWorkLog` with `{ ok: true/false }` discriminated returns. Both `extension.mjs` and `mcp-server.mjs` delegate to these instead of duplicating validate→create→persist→backup logic.
+- **Moved `atomicWriteText` to `lib/storage.mjs`** alongside `atomicWriteJSON`. Previously duplicated in both `extension.mjs` and `mcp-server.mjs`.
+- **`isBragRequest` no longer false-triggers on "bragging" / "braggart"** — the `\b` word boundary already prevented matching; the redundant exclude regex that caused false negatives on mixed prompts was removed.
+- **Whitespace-only summaries are now consistently rejected** across both Copilot CLI and MCP surfaces. Previously the MCP surface accepted `"   "` through Zod's `.min(1)`.
+
+### Fixed
+
+- **git config fallback null guard** — `extension.mjs` now applies the same `?? { enabled: false, push: false }` guard as `mcp-server.mjs`, preventing a potential NPE when `config.git` is undefined.
+
 ## [1.1.0] — 2026-05-11
 
 ### Added

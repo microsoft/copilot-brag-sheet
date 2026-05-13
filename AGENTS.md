@@ -109,7 +109,7 @@ This repo has **no build step** (ESM runs directly on Node 18+) and **no
 linter configured** today. The full toolbox is `node --test`.
 
 ```bash
-# Run all 176 tests (ubuntu/macos/windows × Node 18/20/22 in CI)
+# Run all 177 tests (ubuntu/macos/windows × Node 18/20/22 in CI)
 npm test
 
 # Run a single test file
@@ -202,24 +202,24 @@ real bug reports). Don't change them without an issue and discussion first.
 
 ## 5. Testing strategy
 
-Current state: **176 tests, all green, run cross-platform in CI.** Counts
+Current state: **177 tests, all green, run cross-platform in CI.** Counts
 per file (verify with `Select-String -Pattern '^\s*it\('`):
 
 | File | Tests | Covers |
 |---|---:|---|
-| `test/heuristics.test.mjs` | 33 | Tool classification sets, extractFilePath, extractPrInfo, detectShellGitAction, isBragRequest, classifyToolUse. |
-| `test/extension.test.mjs` | 25 | Session record lifecycle, file tracking, significant actions, manual entry creation, review/generate flow, brag/PR/git smoke tests (now importing from lib/heuristics.mjs). |
-| `test/mcp-server.test.mjs` | 20 | MCP server tool handlers via buildServer(), Zod validation, pagination, structured output. |
-| `test/git-backup.test.mjs` | 18 | `ensureGitRepo`, `addRemote`, `backupToGit` with a mocked `git` runner. |
+| `test/heuristics.test.mjs` | 34 | Tool classification sets, extractFilePath, extractPrInfo, detectShellGitAction, isBragRequest (incl. mixed-prompt regression), classifyToolUse. |
+| `test/extension.test.mjs` | 32 | Session record lifecycle, file tracking, significant actions, manual entry creation, review/generate flow, brag/PR/git smoke tests (importing from lib/heuristics.mjs). |
+| `test/git-backup.test.mjs` | 19 | `ensureGitRepo`, `addRemote`, `backupToGit` with a mocked `git` runner. |
+| `test/mcp-server.test.mjs` | 18 | MCP server tool handlers via buildServer(), Zod validation, pagination, structured output. |
 | `test/operations.test.mjs` | 16 | Shared saveBragEntry, reviewBragEntries, generateWorkLog with real disk I/O. |
 | `test/render.test.mjs` | 14 | Markdown rendering, week boundaries (UTC), category grouping, escaping. |
-| `test/storage.test.mjs` | 14 | Atomic JSON/text writes, shard layout, filter semantics, update flow. |
-| `test/pack-smoke.test.mjs` | 10 | Tarball validation, install simulation. |
+| `test/storage.test.mjs` | 12 | Atomic JSON/text writes, shard layout, filter semantics, update flow. |
 | `test/config.test.mjs` | 9 | Default merge, microsoft preset, category resolution. |
 | `test/records.test.mjs` | 8 | Record factories, sanitization, file-path dedup. |
 | `test/paths.test.mjs` | 7 | Per-platform data dir resolution, env-var overrides. |
 | `test/lock.test.mjs` | 7 | Lock acquisition, stale-PID cleanup, contention. |
-| **Total** | **176** | |
+| `test/pack-smoke.test.mjs` | 1 | Tarball validation, install simulation. |
+| **Total** | **177** | |
 
 **What's covered:**
 

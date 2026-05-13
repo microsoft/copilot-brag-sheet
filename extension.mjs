@@ -14,26 +14,21 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import {
   existsSync as fileExists,
-  openSync, closeSync, writeFileSync, readFileSync as readFile, fsyncSync,
-  renameSync, unlinkSync,
+  readFileSync as readFile,
+  unlinkSync,
 } from "node:fs";
 
-import { detectDataDir, detectBragSheetPath, detectGitConfig, ensureDir } from "./lib/paths.mjs";
-import { loadConfig, getAllCategoryIds, isValidCategory, buildUserContext } from "./lib/config.mjs";
+import { detectDataDir, detectGitConfig, ensureDir } from "./lib/paths.mjs";
+import { loadConfig, getAllCategoryIds, buildUserContext } from "./lib/config.mjs";
 import {
-  writeRecord, readRecords, updateRecord, logError, atomicWriteText,
+  writeRecord, readRecords, updateRecord, logError,
 } from "./lib/storage.mjs";
-import { backupToGit, ensureGitRepo, addRemote } from "./lib/git-backup.mjs";
+import { ensureGitRepo, addRemote } from "./lib/git-backup.mjs";
 import {
-  createSessionRecord, createEntryRecord,
+  createSessionRecord,
   addFileToRecord, sanitize, dedupeArray,
 } from "./lib/records.mjs";
-import { renderMarkdown, renderReviewSummary } from "./lib/render.mjs";
-import {
-  FILE_CREATE_TOOLS, FILE_EDIT_TOOLS, PR_TOOLS, SHELL_TOOLS,
-  extractFilePath, extractPrInfo, detectShellGitAction, isBragRequest,
-  classifyToolUse,
-} from "./lib/heuristics.mjs";
+import { isBragRequest, classifyToolUse } from "./lib/heuristics.mjs";
 import {
   saveBragEntry, reviewBragEntries, generateWorkLog,
 } from "./lib/operations.mjs";
@@ -122,8 +117,6 @@ async function recoverOrphans(dir) {
     } catch { /* best effort */ }
   }
 }
-
-// atomicWriteText is now in lib/storage.mjs
 
 /** Lazy-init dataDir, config, and gitConfig if onSessionStart failed. */
 function ensureInitialized() {

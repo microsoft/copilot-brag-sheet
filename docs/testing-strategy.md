@@ -7,7 +7,7 @@
 
 ## Current state — 2026-05
 
-**177 tests, 100% pass rate, 21 suites, ~750ms total runtime.**
+**177 tests, 100% pass rate, 30 suites, run cross-platform in CI.**
 CI matrix: `{ubuntu-latest, macos-latest, windows-latest} × {Node 18, 20, 22}` =
 **9 combinations** running on every PR and `main` push, plus three
 **install-smoke** jobs that exercise the curl-pipe-bash installers

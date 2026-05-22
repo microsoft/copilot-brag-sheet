@@ -10,6 +10,16 @@
  * IMPORTANT: No console.log — stdout is the hook response channel.
  * Debug output goes to stderr, gated on BRAG_SHEET_DEBUG=1.
  *
+ * Invariant: this hook is STATELESS. Each invocation is a fresh subprocess.
+ * Any cross-invocation state must round-trip through disk via lib/storage.mjs
+ * (atomic writes + withFileLock). Phase 1 does not persist — classification
+ * data is returned to the host via stdout only. Persistence is deferred to
+ * Phase 2 (SessionStart/SessionEnd hooks + file-based session record).
+ *
+ * The `classification` field in the response is PROVISIONAL and not a stable
+ * API. Consumers depend on it at their own risk until Phase 2 stabilizes the
+ * persistence story.
+ *
  * @license MIT
  * @see https://github.com/microsoft/copilot-brag-sheet
  */
@@ -76,11 +86,11 @@ async function main() {
       classification: hasActivity ? classification : undefined,
     };
 
-    process.stdout.write(JSON.stringify(response));
+    process.stdout.write(JSON.stringify(response) + "\n");
   } catch (err) {
     debug(`Error: ${err.message}`);
     // Always return valid JSON — never crash the hook chain
-    process.stdout.write(JSON.stringify({ continue: true }));
+    process.stdout.write(JSON.stringify({ continue: true }) + "\n");
   }
 }
 

@@ -52,6 +52,18 @@ Plus three tools the agent can call on your behalf:
 | `review_brag_sheet` | Review recent entries for performance discussions |
 | `generate_work_log` | Render all records into a Markdown file |
 
+### Runtime compatibility
+
+| Runtime | Manual tools | Auto-tracking | Status |
+|---------|-------------|---------------|--------|
+| **Copilot CLI** | ✅ Full | ✅ Full | Production |
+| **MCP hosts** (Claude, Cursor, VS Code) | ✅ Full | ⚠️ Phase 2 | Beta |
+| **Agency** | ✅ Full | ⚠️ Phase 2 | Beta |
+
+**MCP / Agency users:** The three tools (`save_to_brag_sheet`, `review_brag_sheet`, `generate_work_log`) work fully. Automatic session tracking (files edited, PRs created, git actions) requires the Copilot CLI `joinSession()` runtime and is not yet available in other hosts. For now, say `"brag — <accomplishment>"` to capture work manually.
+
+**Copilot CLI users:** Full automatic tracking works today — no action needed.
+
 ### When the agent will use this
 
 The agent picks up these tools when you say (anything close to) one of:

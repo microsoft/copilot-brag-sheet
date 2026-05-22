@@ -1,10 +1,31 @@
 # Cross-Engine Support: MCP Server + Hooks
 
 > **Issue:** microsoft/copilot-brag-sheet#22  
-> **Status:** Research complete, spec draft, pending full review  
+> **Status:** Phase 1 shipped (tools + classification hooks); Phase 2 pending (persistence)  
 > **Priority:** Post-FHL (after May 1)  
 > **Scope:** Full (tools + hooks — full extension parity)  
 > **Distribution:** Agency first (internal MSFT), then public Claude Code plugin
+
+## Phase Status
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| MCP server (`mcp-server.mjs`) | ✅ Shipped v1.1.0 | 3 tools over stdio, `@modelcontextprotocol/sdk` + `zod` |
+| Agency manifests (`agency.json`, `.mcp.json`) | ✅ Shipped | Layer 4, developer-tools category |
+| PostToolUse hook (classification) | ✅ Shipped | Classifies tool calls, returns `{ continue, classification }` to host |
+| PostToolUse hook (persistence) | ⚠️ Phase 2 | Classification data is returned to host but not accumulated on disk |
+| SessionStart / SessionEnd hooks | ⚠️ Phase 2 | Needed for file-based session record lifecycle |
+
+## Phase 2 Design Invariants
+
+These invariants are locked now to ensure Phase 2 is a non-breaking addition:
+
+1. **Hooks are stateless subprocesses.** All cross-invocation state goes through `lib/storage.mjs` (atomic writes + `withFileLock`).
+2. **Stdout is the hook response channel.** Same rule as `extension.mjs` §10.5. Debug → stderr, gated on `BRAG_SHEET_DEBUG=1`.
+3. **Hook failures must not break the host session.** Always emit valid JSON, never throw.
+4. **`classification` field is provisional** until Phase 2 stabilizes the persistence story. Consumers depend on it at their own risk.
+5. **Session-key strategy is TBD.** Will be resolved when SessionStart hook is added — likely minted by SessionStart and exported via env var or sidecar file for PostToolUse to read.
+6. **Phase 2 additions are non-breaking:** new hooks (`SessionStart`, `SessionEnd`) and disk I/O inside `PostToolUse`. The stdout response shape grows, never shrinks.
 
 ---
 

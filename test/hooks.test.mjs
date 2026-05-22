@@ -70,7 +70,18 @@ describe("hooks post-tool-use", () => {
   });
 
   it("returns valid JSON even on malformed input", async () => {
-    const { stdout } = await runHook("not json at all");
+    // Bypass runHook() — send raw non-JSON bytes directly to stdin
+    const { stdout } = await new Promise((resolve, reject) => {
+      const child = execFile("node", [hookPath], {
+        timeout: 10000,
+        windowsHide: true,
+      }, (err, stdout, stderr) => {
+        if (err) return reject(err);
+        resolve({ stdout, stderr });
+      });
+      child.stdin.write("not json at all");
+      child.stdin.end();
+    });
 
     // Should not throw — graceful fallback
     const result = JSON.parse(stdout);

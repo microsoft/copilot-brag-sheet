@@ -132,6 +132,23 @@ test("renderMarkdown escapes pipes in session log table rows", () => {
   assert.match(output, /\| Jan 8 10:30 \| Pipe \\| summary \| repo\\|name \| 1 \|/);
 });
 
+test("renderMarkdown falls back to taskDescription when summary is absent", () => {
+  const output = renderMarkdown([
+    {
+      type: "session",
+      timestamp: "2025-01-08T10:30:00Z",
+      summary: null,
+      taskDescription: "Fix auth regression in login flow",
+      category: null,
+      repo: "copilot-brag-sheet",
+      filesEdited: ["src/auth.ts"],
+      filesCreated: []
+    }
+  ], { includeSessionLog: true });
+
+  assert.match(output, /Fix auth regression in login flow/);
+});
+
 test("renderReviewSummary filters to requested week window", () => {
   const now = new Date();
   const recent = new Date(now);

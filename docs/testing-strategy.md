@@ -7,7 +7,7 @@
 
 ## Current state — 2026-05
 
-**177 tests, 100% pass rate, 30 suites, run cross-platform in CI.**
+**184 tests, 100% pass rate, 31 suites, run cross-platform in CI.**
 CI matrix: `{ubuntu-latest, macos-latest, windows-latest} × {Node 18, 20, 22}` =
 **9 combinations** running on every PR and `main` push, plus three
 **install-smoke** jobs that exercise the curl-pipe-bash installers
@@ -16,7 +16,7 @@ CI matrix: `{ubuntu-latest, macos-latest, windows-latest} × {Node 18, 20, 22}` 
 Run the suite locally:
 
 ```bash
-npm test                                      # all 177
+npm test                                      # all 184
 node --test test/storage.test.mjs             # one file
 node --test --test-name-pattern="atomic"      # one pattern
 ```
@@ -46,15 +46,16 @@ No test framework dependency — we use `node:test` and
 | [`lib/lock.mjs`](../lib/lock.mjs) | `test/lock.test.mjs` | 7 | Successful acquire/release, contention (`EEXIST` retries), stale-PID detection (`process.kill(pid, 0)`), lock-file content readback, timeout. | Multi-process contention (we mock PIDs). Filesystem-level locking on network shares (SMB/NFS). |
 | [`lib/storage.mjs`](../lib/storage.mjs) | `test/storage.test.mjs` | 12 | Atomic JSON write (tmp file cleanup on failure), atomic text write (round-trip, overwrite), shard layout (`YYYY/MM/<ts>_<id>.json`), shard-bound filtering on `since`/`until`, type/category/repo/tags filters, `updateRecord` merge semantics, `logError` never throws. | Disk-full scenarios. `fsync` failures (we trust the OS). Records with `Date.parse`-invalid timestamps in old data. |
 | [`lib/records.mjs`](../lib/records.mjs) | `test/records.test.mjs` | 8 | `createSessionRecord` + `createEntryRecord` shape, `sanitize()` (newlines, markers, headings, pipes, length cap), `addFileToRecord` dedup + `.copilot/session-state` filtering + repo-relative path normalization. | Case-insensitive dedup on Windows/macOS. Path traversal (`../`) attempts. |
-| [`lib/render.mjs`](../lib/render.mjs) | `test/render.test.mjs` | 14 | `weekOf` UTC consistency including year boundaries, `renderMarkdown` empty/single/multi-week/multi-category cases, session-log opt-in, escaping pipes in tables, ordering newest-first, "Other" bucket for uncategorized, `renderReviewSummary` window filtering. | Internationalized week boundaries (we hardcode UTC). Locale-specific month names. |
+| [`lib/render.mjs`](../lib/render.mjs) | `test/render.test.mjs` | 15 | `weekOf` UTC consistency including year boundaries, `renderMarkdown` empty/single/multi-week/multi-category cases, session-log opt-in, escaping pipes in tables, ordering newest-first, "Other" bucket for uncategorized, `taskDescription` fallback for sessions without summary, `renderReviewSummary` window filtering. | Internationalized week boundaries (we hardcode UTC). Locale-specific month names. |
 | [`lib/git-backup.mjs`](../lib/git-backup.mjs) | `test/git-backup.test.mjs` | 19 | `ensureGitRepo` init + idempotent reuse, `addRemote`, `hasRemote`, `backupToGit` happy path / no-changes / commit-fail / push-fail, error logging via the injectable runner pattern (`createGitRunner`). | Real `git` binary execution (we mock). Auth failures on push. Detached HEAD states. Repos with submodules. |
 | [`extension.mjs`](../extension.mjs) | `test/extension.test.mjs` | 32 | Session lifecycle (active/finalized/orphaned/emergency-saved), file tracking (edit/create classification, dedup, `.copilot/session-state` skip, repo-relative normalization), significant-action accumulation, `save_to_brag_sheet` flow, category validation, summary sanitization, repo/branch auto-detection, `review_brag_sheet` rendering, `generate_work_log` write, brag/PR/git smoke tests (importing from `lib/heuristics.mjs`). | Hooks firing inside the SDK runtime (see "What is NOT covered" below). |
 | [`mcp-server.mjs`](../mcp-server.mjs) | `test/mcp-server.test.mjs` | 18 | MCP server tool handlers via `buildServer()`, Zod input validation, pagination, structured output, response_format switching. | Real MCP transport. |
+| [`hooks/post-tool-use.mjs`](../hooks/post-tool-use.mjs) | `test/hooks.test.mjs` | 6 | Subprocess stdin/stdout classification (file edit, PR creation, unrecognized tool), malformed-input graceful fallback, stdout purity (no console.log pollution), camelCase payload compat. | Hook execution inside a real Agency host. Phase 2 persistence paths. |
 | [`bin/setup.mjs`](../bin/setup.mjs) | — | 0 | — | Interactive prompts. Non-TTY exit (covered indirectly by CI matrix). |
 | [`bin/install.mjs`](../bin/install.mjs) | install-smoke (CI) | 0 unit | Tarball → `~/.copilot/extensions/...` layout. Re-run idempotency. | Failure path when `COPILOT_HOME` exists but isn't writable. |
 | [`install.sh`](../install.sh) / [`install.ps1`](../install.ps1) | install-smoke (CI) | — | End-to-end install on Linux/macOS, Windows PS 5.1, Windows pwsh 7+ (matches real-world Windows 10/11 default shell). | Air-gapped installs. Behind-corporate-proxy installs. |
 
-**Total: 177 unit tests + 4 install-smoke jobs (3 OS × shells).**
+**Total: 184 unit tests + 4 install-smoke jobs (3 OS × shells).**
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "copilot-brag-sheet",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Auto-track AI coding sessions into a structured work log. Local-first, MCP-conformant.",
   "mcpName": "io.github.microsoft/copilot-brag-sheet",
   "type": "module",

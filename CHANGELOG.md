@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-05-26
+
 ### Added
 
 - **Agency plugin manifests** — `agency.json` (governance manifest), `.mcp.json` (standalone MCP config), and `hooks/hooks.json` (PostToolUse hook declaration) enable installation via `agency plugin install`. The PostToolUse hook classifies tool calls using `lib/heuristics.mjs` and returns classification data to the host. **Phase 1: classification only; session persistence is deferred to Phase 2.**

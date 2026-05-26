@@ -2,7 +2,7 @@
 
 Prioritized by impact ÷ effort. Contributions welcome — open an issue to discuss.
 
-> **Last updated:** 2026-05-01.
+> **Last updated:** 2026-05-26.
 
 ## Priority 0 — Product completeness & distribution (next 2 weeks)
 
@@ -20,15 +20,17 @@ The README promises "automatic" capture but the tool currently requires saying "
 
 See [`docs/cross-engine-spec.md`](docs/cross-engine-spec.md).
 
-- [ ] **MCP server** (`mcp-server.mjs`) — wraps the existing `lib/` modules in MCP protocol so any MCP-compatible client (Copilot CLI, Claude Code, VS Code, Codex) can use the tools. Resolve the spec's 5 open questions first.
-- [ ] **Hooks** (`hooks/`) — `session-start.mjs` + `session-end.mjs` for cross-engine session tracking
-- [ ] **Plugin manifest** (`.claude-plugin/plugin.json`) — declares skills, hooks, MCP server
-- [ ] **Phase 1 — Agency plugin** (internal MSFT) — upgrade XPASS PR from skill-only to full plugin
-- [ ] **Phase 2 — Public Claude Code plugin** — `claude plugin install github:microsoft/copilot-brag-sheet`
-- [ ] **Phase 3 — npm + npx** — `npx copilot-brag-sheet mcp-server` for any MCP client
+- [x] **MCP server** (`mcp-server.mjs`) — wraps the existing `lib/` modules in MCP protocol so any MCP-compatible client (Copilot CLI, Claude Code, VS Code, Codex) can use the tools. Shipped in v1.1.0.
+- [x] **Plugin manifest** (`.claude-plugin/plugin.json`) — declares skills, hooks, MCP server. Shipped in v1.1.0.
+- [x] **Phase 1 — Agency plugin** (internal MSFT) — `agency.json`, `.mcp.json`, `hooks/hooks.json`, `hooks/post-tool-use.mjs`. Classification-only PostToolUse hook via `lib/heuristics.mjs`. Shipped in v1.2.0.
+- [ ] **Phase 2 — Session persistence** — `session-start.mjs` + `session-end.mjs` hooks for cross-engine session tracking. Requires session-key strategy (see `docs/cross-engine-spec.md` Phase 2 invariants).
+- [ ] **Phase 3 — Public Claude Code plugin** — `claude plugin install github:microsoft/copilot-brag-sheet`
+- [ ] **Phase 4 — npm + npx** — `npx copilot-brag-sheet mcp-server` for any MCP client
 
 ## Shipped
 
+- [x] **v1.2.0** — Agency plugin manifests (Phase 1), PostToolUse classification hook, extracted `lib/heuristics.mjs` + `lib/operations.mjs`, session summary `taskDescription` fallback fix. 184 tests.
+- [x] **v1.1.0** — MCP server (`mcp-server.mjs`) with Zod schemas, Claude Code plugin manifest, cross-engine spec
 - [x] **v1.0.3** — install bug fixes, README rewrite, plugin.json drift fix, peerDeps declaration, tarball validation in CI
 - [x] **v1.0.2** — Windows PS 5.1 install fix, npm install path (`bin/install.mjs`), Windows ESM URL fix in setup, install-smoke CI matrix, npm publish via release.yml
 - [x] **awesome-copilot skill** — listed via PR #1428 (merged April 2026)

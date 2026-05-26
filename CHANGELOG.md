@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Added
+
+- **Agency plugin manifests** — `agency.json` (governance manifest), `.mcp.json` (standalone MCP config), and `hooks/hooks.json` (PostToolUse hook declaration) enable installation via `agency plugin install`. The PostToolUse hook classifies tool calls using `lib/heuristics.mjs` and returns classification data to the host. **Phase 1: classification only; session persistence is deferred to Phase 2.**
+- **`hooks/post-tool-use.mjs`** — Agency PostToolUse hook script. Reads JSON from stdin, classifies file edits / PR creation / git actions, writes JSON response to stdout. Stateless subprocess — each invocation is independent.
+
 ### Changed
 
 - **Extracted `lib/heuristics.mjs`** — tool classification sets, extraction helpers (`extractPrInfo`, `detectShellGitAction`), brag keyword detection (`isBragRequest`), and composite `classifyToolUse()` are now importable from any entry point. `extension.mjs` imports from this module instead of defining them inline.
@@ -17,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ### Fixed
 
 - **git config fallback null guard** — `extension.mjs` now applies the same `?? { enabled: false, push: false }` guard as `mcp-server.mjs`, preventing a potential NPE when `config.git` is undefined.
+- **Empty session summaries in work-log** — `formatSessionRow` now falls back to `taskDescription` (captured from the user's first prompt) when `summary` is absent. Previously sessions without a host-provided `finalMessage` rendered as blank rows in the session activity log.
 
 ## [1.1.0] — 2026-05-11
 

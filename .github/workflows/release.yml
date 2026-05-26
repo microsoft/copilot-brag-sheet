@@ -60,11 +60,15 @@ jobs:
           required=(
             extension.mjs
             mcp-server.mjs
+            agency.json
+            .mcp.json
             plugin.json
             package.json
             bin/install.mjs
             bin/setup.mjs
             bin/mcp-server.mjs
+            hooks/hooks.json
+            hooks/post-tool-use.mjs
             lib/config.mjs
             lib/git-backup.mjs
             lib/heuristics.mjs

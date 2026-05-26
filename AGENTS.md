@@ -59,6 +59,18 @@ Copilot CLI host  ──spawns──▶  extension.mjs (joinSession)
                                             │
                                             ▼
                               optional: git commit/push to private repo
+
+Agency host  ──spawns──▶  hooks/post-tool-use.mjs (subprocess per event)
+                               │
+                               ├── reads JSON payload from stdin
+                               ├── classifies via lib/heuristics.mjs
+                               └── writes JSON response to stdout
+                                   (Phase 1: classification only, no persistence)
+
+MCP host  ──stdio──▶  mcp-server.mjs (@modelcontextprotocol/sdk)
+                           │
+                           ├── tools: save_to_brag_sheet / review_brag_sheet / generate_work_log
+                           └── delegates to lib/operations.mjs
 ```
 
 **Entry points** (start here):
@@ -66,6 +78,8 @@ Copilot CLI host  ──spawns──▶  extension.mjs (joinSession)
 | File | Role |
 |---|---|
 | [`extension.mjs`](extension.mjs) | The only file that imports `@github/copilot-sdk/extension`. Wires hooks and tools to `lib/*`. **All Copilot-specific glue lives here and nowhere else.** |
+| [`mcp-server.mjs`](mcp-server.mjs) | MCP stdio server exposing all three tools. Uses `@modelcontextprotocol/sdk` + `zod`. Works with any MCP-compatible host. |
+| [`hooks/post-tool-use.mjs`](hooks/post-tool-use.mjs) | Agency PostToolUse hook. Classifies tool calls via `lib/heuristics.mjs`, returns classification to host via stdout. **Phase 1: classification only, no persistence.** |
 | [`bin/install.mjs`](bin/install.mjs) | `npm i -g copilot-brag-sheet && copilot-brag-sheet` — copies package files into `~/.copilot/extensions/` and runs setup. |
 | [`bin/setup.mjs`](bin/setup.mjs) | Interactive wizard: presets, git backup, output path. Non-TTY exits cleanly (CI-safe). |
 | [`install.sh`](install.sh) / [`install.ps1`](install.ps1) | Curl-pipe-bash installers. Cross-platform CI-tested on PS 5.1 and pwsh 7. |
@@ -202,7 +216,7 @@ real bug reports). Don't change them without an issue and discussion first.
 
 ## 5. Testing strategy
 
-Current state: **177 tests, all green, run cross-platform in CI.** Counts
+Current state: **184 tests, all green, run cross-platform in CI.** Counts
 per file (verify with `Select-String -Pattern '^\s*it\('`):
 
 | File | Tests | Covers |
@@ -212,14 +226,15 @@ per file (verify with `Select-String -Pattern '^\s*it\('`):
 | `test/git-backup.test.mjs` | 19 | `ensureGitRepo`, `addRemote`, `backupToGit` with a mocked `git` runner. |
 | `test/mcp-server.test.mjs` | 18 | MCP server tool handlers via buildServer(), Zod validation, pagination, structured output. |
 | `test/operations.test.mjs` | 16 | Shared saveBragEntry, reviewBragEntries, generateWorkLog with real disk I/O. |
-| `test/render.test.mjs` | 14 | Markdown rendering, week boundaries (UTC), category grouping, escaping. |
+| `test/render.test.mjs` | 15 | Markdown rendering, week boundaries (UTC), category grouping, escaping, taskDescription fallback. |
 | `test/storage.test.mjs` | 12 | Atomic JSON/text writes, shard layout, filter semantics, update flow. |
 | `test/config.test.mjs` | 9 | Default merge, microsoft preset, category resolution. |
 | `test/records.test.mjs` | 8 | Record factories, sanitization, file-path dedup. |
 | `test/paths.test.mjs` | 7 | Per-platform data dir resolution, env-var overrides. |
 | `test/lock.test.mjs` | 7 | Lock acquisition, stale-PID cleanup, contention. |
+| `test/hooks.test.mjs` | 6 | Agency PostToolUse hook subprocess tests: classification, malformed input, stdout purity, camelCase compat. |
 | `test/pack-smoke.test.mjs` | 1 | Tarball validation, install simulation. |
-| **Total** | **177** | |
+| **Total** | **184** | |
 
 **What's covered:**
 
@@ -347,8 +362,8 @@ Until then, the `_npmUser` is whoever holds the `NPM_TOKEN`, not
 | **npm** | ✅ live (`copilot-brag-sheet`) | `npm i -g copilot-brag-sheet && copilot-brag-sheet` runs `bin/install.mjs`. |
 | **`install.sh` / `install.ps1`** | ✅ live | One-line curl-pipe-bash from `raw.githubusercontent.com/...`. CI-tested on PS 5.1 + pwsh 7 + bash. |
 | **awesome-copilot skill** | ✅ live | [`SKILL.md`](skills/brag-sheet/SKILL.md) is mirrored in [github/awesome-copilot](https://github.com/github/awesome-copilot) (PR #1428). The skill is the prompt; this repo is the prompt **plus** the deterministic capture. |
-| **Claude Code plugin** | 🟡 planned | Tracked in [`docs/cross-engine-spec.md`](docs/cross-engine-spec.md). Will reuse `lib/*` unchanged via a thin Claude adapter. |
-| **MCP server** | 🟡 planned | `mcp-server.mjs` will expose the same three tools to any MCP-compatible host (Cursor, VS Code, Codex, Copilot CLI). |
+| **Claude Code plugin** | ✅ partial (tools: v1.1; auto-tracking: Phase 2) | Tracked in [`docs/cross-engine-spec.md`](docs/cross-engine-spec.md). MCP tools work fully; auto-tracking hooks are classification-only (persistence in Phase 2). |
+| **MCP server** | ✅ live | `mcp-server.mjs` exposes all three tools to any MCP-compatible host (Cursor, VS Code, Codex, Copilot CLI) via `copilot-brag-sheet-mcp` bin. |
 | **`copilot plugin install`** | 🚫 blocked upstream | This is a `joinSession()` extension, not an MCP plugin — needs [github/copilot-cli#3023](https://github.com/github/copilot-cli/issues/3023). Don't try to register it under `~/.copilot/plugins/`. |
 
 Don't add new distribution channels (e.g. Homebrew, scoop, winget)
@@ -371,6 +386,11 @@ proving distribution conversion before fanning out further.
 | `lib/records.mjs` | Record factories, `sanitize`, `addFileToRecord`. | Changing the record schema (and read §10 first). |
 | `lib/render.mjs` | Records → Markdown. Reserved markers live here. | Changing the work-log Markdown layout. |
 | `lib/git-backup.mjs` | Optional git init/commit/push of data dir. | Adding remote types, fixing git edge cases. |
+| `mcp-server.mjs` | MCP stdio server (3 tools). Only file that imports `@modelcontextprotocol/sdk` + `zod`. | Adding an MCP tool or changing protocol behavior. |
+| `agency.json` | Agency governance manifest (layer 4, developer-tools). **No `version` field** — `package.json` is source of truth. | Changing Agency category, engines, or governance metadata. |
+| `.mcp.json` | Standalone MCP server config for Agency hosts. | Changing MCP server args or transport. |
+| `hooks/hooks.json` | Agency hook declarations (PostToolUse). | Adding a hook event (e.g. SessionStart, SessionEnd for Phase 2). |
+| `hooks/post-tool-use.mjs` | Agency PostToolUse hook. Classifies tool calls via `lib/heuristics.mjs`. **Phase 1: classification only.** | Changing classification behavior or adding persistence (Phase 2). |
 | `bin/install.mjs` | Post-`npm-i` wizard launcher. Copies pkg → `~/.copilot/extensions/`. | Changing the install layout or required-files list. |
 | `bin/setup.mjs` | Interactive setup wizard. Non-TTY-safe. | Adding a config field, preset, or onboarding step. |
 | `install.sh` / `install.ps1` | Curl-pipe-bash installers. | Cross-platform install behavior. PR must include CI smoke updates. |

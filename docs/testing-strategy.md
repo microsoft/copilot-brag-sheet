@@ -5,18 +5,18 @@
 
 ---
 
-## Current state — 2026-05
+## Current state — 2026-09
 
-**184 tests, 100% pass rate, 31 suites, run cross-platform in CI.**
+The suite includes unit tests, subprocess adapter tests, and MCP protocol tests.
 CI matrix: `{ubuntu-latest, macos-latest, windows-latest} × {Node 18, 20, 22}` =
-**9 combinations** running on every PR and `main` push, plus three
+**9 combinations** running on every PR and `main` push, plus four
 **install-smoke** jobs that exercise the curl-pipe-bash installers
 (Linux/macOS, Windows PS 5.1, Windows pwsh 7+).
 
 Run the suite locally:
 
 ```bash
-npm test                                      # all 184
+npm test                                    # full suite
 node --test test/storage.test.mjs             # one file
 node --test --test-name-pattern="atomic"      # one pattern
 ```
@@ -39,23 +39,25 @@ No test framework dependency — we use `node:test` and
 
 | Source module | Test file | Tests | What is covered | What is NOT covered |
 |---|---|---:|---|---|
-| [`lib/paths.mjs`](../lib/paths.mjs) | `test/paths.test.mjs` | 7 | Per-platform data dir resolution (Win/macOS/Linux), env-var overrides (`WORK_TRACKER_DIR`, `XDG_DATA_HOME`, `LOCALAPPDATA`, `WORK_TRACKER_OUTPUT_PATH`), `ensureDir` idempotency. | Symlinked HOME directories. UNC paths on Windows (tracked in [ROADMAP P4](../ROADMAP.md)). |
+| [`lib/paths.mjs`](../lib/paths.mjs) | `test/paths.test.mjs` | 9 | Per-platform data dir resolution (Win/macOS/Linux), env-var overrides (`WORK_TRACKER_DIR`, `XDG_DATA_HOME`, `LOCALAPPDATA`, `WORK_TRACKER_OUTPUT_PATH`), current/legacy SDK working-directory fields, `ensureDir` idempotency. | Symlinked HOME directories. UNC paths on Windows (tracked in [ROADMAP P4](../ROADMAP.md)). |
 | [`lib/config.mjs`](../lib/config.mjs) | `test/config.test.mjs` | 9 | Default config shape, deep-merge with user config, microsoft preset toggles, missing-file fallback, malformed-JSON fallback, category lookup helpers, `buildUserContext` for preset. | Malicious config that injects `__proto__` keys. Unknown preset names (currently silently ignored). |
-| [`lib/heuristics.mjs`](../lib/heuristics.mjs) | `test/heuristics.test.mjs` | 34 | Tool classification sets (create/edit/PR/shell), `extractFilePath`, `extractPrInfo` (GitHub + ADO formats, owner/repo combos, failure results), `detectShellGitAction` (commit/push/null), `isBragRequest` (standalone word, excludes bragging/braggart, mixed prompts, null/empty), `classifyToolUse` composite (all tool types, null args, failed PRs, unrecognized tools). | Custom tool names not in the built-in sets. |
-| [`lib/operations.mjs`](../lib/operations.mjs) | `test/operations.test.mjs` | 16 | `saveBragEntry` (valid save, disk persistence, invalid category with error code, empty/whitespace/newline-only summary rejection, null category, tags, sanitization), `reviewBragEntries` (records + markdown, empty, default weeks, filtering), `generateWorkLog` (file write, default path, zero records). | Concurrent saves (idempotency key deferred). Git backup failure logging. |
+| [`lib/heuristics.mjs`](../lib/heuristics.mjs) | `test/heuristics.test.mjs` | 39 | Tool classification sets, file extraction including `apply_patch` and path variants, namespaced PR tools, failure exclusion, shell actions, and brag intent. | Tool names with no stable public contract require fixture updates when hosts change. |
+| [`lib/operations.mjs`](../lib/operations.mjs) | `test/operations.test.mjs` | 19 | Save validation, sanitization, concurrent idempotent retries, recent activity from old session shards, and generation flows. | Git backup failure logging. |
 | [`lib/lock.mjs`](../lib/lock.mjs) | `test/lock.test.mjs` | 7 | Successful acquire/release, contention (`EEXIST` retries), stale-PID detection (`process.kill(pid, 0)`), lock-file content readback, timeout. | Multi-process contention (we mock PIDs). Filesystem-level locking on network shares (SMB/NFS). |
-| [`lib/storage.mjs`](../lib/storage.mjs) | `test/storage.test.mjs` | 12 | Atomic JSON write (tmp file cleanup on failure), atomic text write (round-trip, overwrite), shard layout (`YYYY/MM/<ts>_<id>.json`), shard-bound filtering on `since`/`until`, type/category/repo/tags filters, `updateRecord` merge semantics, `logError` never throws. | Disk-full scenarios. `fsync` failures (we trust the OS). Records with `Date.parse`-invalid timestamps in old data. |
-| [`lib/records.mjs`](../lib/records.mjs) | `test/records.test.mjs` | 8 | `createSessionRecord` + `createEntryRecord` shape, `sanitize()` (newlines, markers, headings, pipes, length cap), `addFileToRecord` dedup + `.copilot/session-state` filtering + repo-relative path normalization. | Case-insensitive dedup on Windows/macOS. Path traversal (`../`) attempts. |
-| [`lib/render.mjs`](../lib/render.mjs) | `test/render.test.mjs` | 15 | `weekOf` UTC consistency including year boundaries, `renderMarkdown` empty/single/multi-week/multi-category cases, session-log opt-in, escaping pipes in tables, ordering newest-first, "Other" bucket for uncategorized, `taskDescription` fallback for sessions without summary, `renderReviewSummary` window filtering. | Internationalized week boundaries (we hardcode UTC). Locale-specific month names. |
+| [`lib/storage.mjs`](../lib/storage.mjs) | `test/storage.test.mjs` | 17 | Atomic writes, filters, stable-ID reads/updates, cross-shard version merging, and concurrent retry-safe creation across independent processes. | Disk-full scenarios. `fsync` failures (we trust the OS). |
+| [`lib/records.mjs`](../lib/records.mjs) | `test/records.test.mjs` | 15 | Factories, sanitization, paths, capture counters, initial prompts, subagent identity, lifecycle, and resumed summary refresh. | Case-insensitive dedup on Windows/macOS. |
+| [`lib/render.mjs`](../lib/render.mjs) | `test/render.test.mjs` | 17 | Markdown rendering, UTC weeks, latest-activity grouping, categories, escaping, fallback, and capture health. | Internationalized week boundaries and locale-specific month names. |
 | [`lib/git-backup.mjs`](../lib/git-backup.mjs) | `test/git-backup.test.mjs` | 19 | `ensureGitRepo` init + idempotent reuse, `addRemote`, `hasRemote`, `backupToGit` happy path / no-changes / commit-fail / push-fail, error logging via the injectable runner pattern (`createGitRunner`). | Real `git` binary execution (we mock). Auth failures on push. Detached HEAD states. Repos with submodules. |
 | [`extension.mjs`](../extension.mjs) | `test/extension.test.mjs` | 32 | Session lifecycle (active/finalized/orphaned/emergency-saved), file tracking (edit/create classification, dedup, `.copilot/session-state` skip, repo-relative normalization), significant-action accumulation, `save_to_brag_sheet` flow, category validation, summary sanitization, repo/branch auto-detection, `review_brag_sheet` rendering, `generate_work_log` write, brag/PR/git smoke tests (importing from `lib/heuristics.mjs`). | Hooks firing inside the SDK runtime (see "What is NOT covered" below). |
-| [`mcp-server.mjs`](../mcp-server.mjs) | `test/mcp-server.test.mjs` | 18 | MCP server tool handlers via `buildServer()`, Zod input validation, pagination, structured output, response_format switching. | Real MCP transport. |
-| [`hooks/post-tool-use.mjs`](../hooks/post-tool-use.mjs) | `test/hooks.test.mjs` | 6 | Subprocess stdin/stdout classification (file edit, PR creation, unrecognized tool), malformed-input graceful fallback, stdout purity (no console.log pollution), camelCase payload compat. | Hook execution inside a real Agency host. Phase 2 persistence paths. |
+| [`extension.mjs`](../extension.mjs) | `test/extension-adapter.test.mjs` | 22 | Actual hook/tool wiring, cross-process resume, delegated lifecycle, cross-repository paths, concurrent hooks, shutdown/disconnect/exit, and orphan recovery. | Real host event delivery; POSIX signal scenarios are skipped on Windows. |
+| [`mcp-server.mjs`](../mcp-server.mjs) | `test/mcp-server.test.mjs` | 20 | Stdio protocol, Zod validation, activity-ordered pagination, structured output, format switching, and explicit-key idempotency. | Real external MCP hosts. |
+| [`hooks/post-tool-use.mjs`](../hooks/post-tool-use.mjs) | `test/hooks.test.mjs` | 7 | Subprocess stdin/stdout classification (file edit, apply_patch, PR creation, unrecognized tool), malformed-input graceful fallback, stdout purity, camelCase payload compatibility. | Hook execution inside a real host. Phase 2 persistence paths. |
 | [`bin/setup.mjs`](../bin/setup.mjs) | — | 0 | — | Interactive prompts. Non-TTY exit (covered indirectly by CI matrix). |
 | [`bin/install.mjs`](../bin/install.mjs) | install-smoke (CI) | 0 unit | Tarball → `~/.copilot/extensions/...` layout. Re-run idempotency. | Failure path when `COPILOT_HOME` exists but isn't writable. |
 | [`install.sh`](../install.sh) / [`install.ps1`](../install.ps1) | install-smoke (CI) | — | End-to-end install on Linux/macOS, Windows PS 5.1, Windows pwsh 7+ (matches real-world Windows 10/11 default shell). | Air-gapped installs. Behind-corporate-proxy installs. |
 
-**Total: 184 unit tests + 4 install-smoke jobs (3 OS × shells).**
+**Total: 233 tests + 4 install-smoke jobs (3 OS × shells).**
+Two POSIX signal scenarios are skipped on Windows.
 
 ---
 
@@ -82,9 +84,23 @@ and re-implementing it (or testing the underlying `lib/*` it delegates
 to). That's why `test/extension.test.mjs` lives next to the entry point
 but doesn't actually import it.
 
-The trade-off: **the wiring between hooks and lib functions is currently
-verified only by manual smoke tests.** That's the largest gap in our
-coverage.
+`test/extension-adapter.test.mjs` also imports the unmodified entry point in
+isolated subprocesses. Each scratch package provides a fake SDK through normal
+Node package resolution and uses real storage and Git repository detection.
+The fixtures exercise lifecycle, delegated work, resume across processes,
+concurrent hooks, shutdown, and tools. They do not modify installed extensions
+or use private tracker data.
+
+This verifies adapter wiring, not host delivery guarantees. Live-host smoke
+tests remain necessary when the experimental CLI extension API changes.
+
+An isolated Windows smoke test with Copilot CLI 1.0.88 verified interactive
+extension loading, `apply_patch` capture, resume into one record, accumulated
+file evidence and tool counters, and subsequent orphan recovery. It used
+synthetic files with Git backup disabled. Prompt-only mode did not load the
+JavaScript extension. Normal CLI exit force-terminated the extension without
+delivering cleanup callbacks, so the next session's stale-process recovery was
+required; a green adapter test alone does not prove graceful host shutdown.
 
 ### `bin/setup.mjs`
 
@@ -115,37 +131,11 @@ upstream's responsibility.
 
 These are tracked informally; promote to `ROADMAP.md` if you start work.
 
-### 1. Mock-host hooks tests (high value, medium effort)
+### 1. Mock-host hooks tests (implemented)
 
-**Goal:** verify that `onSessionStart` writes a session record,
-`onPostToolUse` for an `edit` tool appends to `filesEdited`, etc., end-to-end.
-
-**Approach:** ship a tiny `test/_mock-host.mjs` that exposes a fake
-`joinSession` shim, then point a test-only build of `extension.mjs` at
-it via an environment-gated import. Sketch:
-
-```js
-// test/_mock-host.mjs
-export async function joinSession({ hooks, tools }) {
-  return {
-    log: async () => {},
-    on: () => {},
-    __hooks: hooks,
-    __tools: tools,
-  };
-}
-
-// test/extension-hooks.test.mjs
-process.env.WORK_TRACKER_DIR = mkdtempSync(...);
-process.env.BRAG_SHEET_TEST_HOST = "1";
-const ext = await import("../extension.mjs"); // import-mapped to mock
-await ext.__hooks.onSessionStart({ cwd: "/tmp" }, { sessionId: "t1" });
-const records = readRecords(process.env.WORK_TRACKER_DIR);
-assert.equal(records.length, 1);
-```
-
-The import-map can use `node --conditions=test` + a `package.json`
-exports map, or a tiny build step that rewrites the SDK import.
+`test/extension-adapter.test.mjs` and `test/fixtures/` provide this coverage
+without a production test flag, a rewritten SDK import, or a runtime dependency.
+New adapter behavior should extend these scenarios as well as the pure helpers.
 
 ### 2. Subprocess nightly E2E (high value, high effort)
 
@@ -202,7 +192,7 @@ schema drift before users do.
   field. Compare entire objects rather than enumerating one field at a time.
 - **One scenario per `it()`.** A test that checks five things should
   probably be five tests.
-- **Keep tests fast.** Total suite runs in ~750ms today. If a single
+- **Keep tests fast.** Subprocess and package tests dominate runtime. If a single
   test takes >100ms, ask why.
 
 ---

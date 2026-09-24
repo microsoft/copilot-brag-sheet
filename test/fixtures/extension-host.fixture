@@ -1,0 +1,421 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
+import { readRecord, readRecords, writeRecord } from "./lib/storage.mjs";
+import { createSessionRecord } from "./lib/records.mjs";
+
+const dataDir = process.env.WORK_TRACKER_DIR;
+const workspace = path.resolve("workspace");
+if (!existsSync(path.join(workspace, ".git"))) {
+  execFileSync("git", ["init", "--quiet", workspace], { stdio: "pipe" });
+  execFileSync("git", ["remote", "add", "origin", "https://example.invalid/owner/adapter.git"],
+    { cwd: workspace, stdio: "pipe" });
+}
+await import("./extension.mjs");
+const host = globalThis.mockHost;
+assert.ok(host);
+assert.deepEqual(Object.keys(host.hooks).sort(), [
+  "onErrorOccurred", "onPostToolUse", "onPostToolUseFailure", "onSessionEnd",
+  "onSessionStart", "onUserPromptSubmitted",
+]);
+assert.deepEqual([...host.listeners.keys()].sort(), [
+  "session.compaction_complete", "session.shutdown",
+]);
+assert.deepEqual(host.tools.map(tool => tool.name).sort(), [
+  "generate_work_log", "review_brag_sheet", "save_to_brag_sheet",
+]);
+const parentId = "parent-session";
+const childId = "child-session";
+const invocation = { sessionId: parentId };
+const stamp = "2026-09-24T12:00:00.000Z";
+const hook = (name, input = {}) => host.hooks[name]({
+  sessionId: parentId, timestamp: stamp, ...input,
+}, invocation);
+const start = (input = {}) => hook("onSessionStart", {
+  workingDirectory: workspace, source: "startup", initialPrompt: "Fix adapter capture", ...input,
+});
+const records = () => readRecords(dataDir, { type: "session" });
+const record = () => {
+  const all = records();
+  assert.equal(all.length, 1);
+  assert.equal(all[0].id, parentId);
+  return all[0];
+};
+const tool = (name, args) => host.tools.find(tool => tool.name === name).handler(args, invocation);
+const event = (name) => host.listeners.get(name)({ timestamp: stamp });
+const edit = (name, input = {}) => hook("onPostToolUse", {
+  toolName: "edit", toolArgs: { path: name }, toolResult: { resultType: "success" },
+  workingDirectory: workspace, ...input,
+});
+const noErrors = () => assert.equal(
+  existsSync(path.join(dataDir, "errors.log"))
+    ? readFileSync(path.join(dataDir, "errors.log"), "utf8") : "", "");
+const waitFor = async (predicate) => {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    if (predicate()) return;
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.fail("Timed out waiting for event persistence");
+};
+const jsonFiles = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+  const file = path.join(dir, entry.name);
+  return entry.isDirectory() ? jsonFiles(file) : entry.name.endsWith(".json") ? [file] : [];
+});
+
+switch (process.argv[2]) {
+  case "process-exit":
+  case "natural-exit":
+  case "host-disconnect":
+  case "finalized-process-exit":
+  case "incomplete-process-exit":
+  case "finalized-host-disconnect":
+  case "process-sigterm":
+  case "process-sigint": {
+    const scenario = process.argv[2];
+    await start();
+    await edit("saved-before-exit.mjs");
+    if (scenario.startsWith("finalized-") || scenario.startsWith("incomplete-")) {
+      await hook("onSessionEnd", {
+        reason: scenario.startsWith("finalized-") ? "complete" : "error",
+        finalMessage: "Host final summary",
+      });
+    }
+    noErrors();
+    if (scenario.endsWith("host-disconnect")) {
+      await new Promise(resolve => {
+        process.stdin.once("end", () => {
+          assert.equal(record().status, scenario.startsWith("finalized-")
+            ? "finalized" : "emergency-saved");
+          resolve();
+        });
+        process.stdin.resume();
+      });
+    } else if (scenario === "process-sigterm" || scenario === "process-sigint") {
+      setInterval(() => {}, 1000);
+      process.kill(process.pid, scenario === "process-sigterm" ? "SIGTERM" : "SIGINT");
+    } else if (scenario !== "natural-exit") {
+      process.exit(0);
+    }
+    break;
+  }
+  case "parent-lifecycle": {
+    await start({ cwd: path.resolve("wrong-cwd"), initialPrompt: "# Fix\nadapter | capture" });
+    let saved = record();
+    assert.equal(saved.cwd, workspace);
+    assert.equal(saved.repo, "adapter");
+    assert.equal(saved.repoFull, "owner/adapter");
+    assert.equal(saved.extensionVersion, JSON.parse(readFileSync("package.json", "utf8")).version);
+    assert.equal(saved.sessionStartSource, "startup");
+    assert.equal(saved.taskDescription, "Fix adapter \\| capture");
+    assert.equal(saved.capture.promptCount, 1);
+    await hook("onUserPromptSubmitted", { prompt: "Continue with tests" });
+    assert.equal(record().taskDescription, saved.taskDescription);
+    assert.equal(record().capture.promptCount, 2);
+    const context = await hook("onUserPromptSubmitted", { prompt: "brag about this" });
+    assert.match(context.additionalContext, /save_to_brag_sheet/);
+    const end = await hook("onSessionEnd", { reason: "user_exit" });
+    saved = record();
+    assert.equal(saved.status, "finalized");
+    assert.equal(saved.endReason, "user_exit");
+    assert.equal(saved.capture.summarySource, "taskDescription");
+    assert.ok(end.sessionSummary);
+    const snapshot = JSON.stringify(saved);
+    event("session.shutdown");
+    assert.equal(JSON.stringify(record()), snapshot);
+    break;
+  }
+  case "delegated-lifecycle": {
+    await start();
+    await edit("parent.mjs");
+    const original = record();
+    await start({ sessionId: childId, initialPrompt: "Child task", workingDirectory: path.resolve("child") });
+    await hook("onUserPromptSubmitted", { sessionId: childId, prompt: "Child prompt" });
+    await edit("child.mjs", { sessionId: childId });
+    await hook("onSessionEnd", { sessionId: childId, reason: "complete", finalMessage: "Child summary" });
+    const saved = record();
+    assert.equal(saved.status, "active");
+    assert.equal(saved.timestamp, original.timestamp);
+    assert.equal(saved.cwd, original.cwd);
+    assert.equal(saved.taskDescription, original.taskDescription);
+    assert.equal(saved.summary, null);
+    assert.equal(saved.capture.promptCount, 1);
+    assert.equal(saved.capture.resumeCount, 0);
+    assert.deepEqual(saved.filesEdited, ["parent.mjs", "child.mjs"]);
+    assert.deepEqual(saved.delegatedSessionIds, [childId]);
+    await hook("onSessionEnd", { reason: "complete", finalMessage: "Parent summary" });
+    assert.equal(record().summary, "Parent summary");
+    break;
+  }
+  case "resume": {
+    await start();
+    await edit("before.mjs");
+    await hook("onSessionEnd", { reason: "error" });
+    const original = record();
+    assert.equal(original.status, "incomplete");
+    await start({ source: "resume", initialPrompt: "Do not replace the task" });
+    await edit("after.mjs");
+    const saved = record();
+    assert.equal(saved.status, "active");
+    assert.equal(saved.timestamp, original.timestamp);
+    assert.equal(saved.endTime, null);
+    assert.equal(saved.endReason, null);
+    assert.equal(saved.taskDescription, original.taskDescription);
+    assert.equal(saved.capture.resumeCount, 1);
+    assert.equal(saved.capture.promptCount, original.capture.promptCount + 1);
+    assert.equal(saved.capture.successfulToolCount, 2);
+    assert.deepEqual(saved.filesEdited, ["before.mjs", "after.mjs"]);
+    assert.equal(jsonFiles(path.join(dataDir, "sessions")).length, 1);
+    break;
+  }
+  case "delegated-starts-first": {
+    await start({ sessionId: childId, initialPrompt: "Child task" });
+    await hook("onUserPromptSubmitted", { sessionId: childId, prompt: "Child prompt" });
+    await hook("onSessionEnd", { sessionId: childId, reason: "complete", finalMessage: "Child summary" });
+    const placeholder = record();
+    assert.equal(placeholder.status, "active");
+    assert.equal(placeholder.taskDescription, null);
+    assert.equal(placeholder.summary, null);
+    await start();
+    await edit("parent.mjs");
+    await hook("onSessionEnd", { reason: "complete", finalMessage: "Parent summary" });
+    const saved = record();
+    assert.equal(saved.timestamp, placeholder.timestamp);
+    assert.equal(saved.cwd, workspace);
+    assert.equal(saved.taskDescription, "Fix adapter capture");
+    assert.equal(saved.capture.promptCount, 1);
+    assert.equal(saved.status, "finalized");
+    assert.equal(saved.summary, "Parent summary");
+    assert.deepEqual(saved.delegatedSessionIds, [childId]);
+    assert.deepEqual(saved.filesEdited, ["parent.mjs"]);
+    break;
+  }
+  case "resume-from-disk-seed": {
+    await start();
+    await edit("before.mjs");
+    event("session.shutdown");
+    assert.equal(record().status, "emergency-saved");
+    break;
+  }
+  case "resume-from-disk": {
+    const original = record();
+    assert.equal(original.status, "emergency-saved");
+    await start({ source: "resume", initialPrompt: "Do not replace the task" });
+    await edit("after.mjs");
+    const saved = record();
+    assert.equal(saved.timestamp, original.timestamp);
+    assert.notEqual(saved.pid, original.pid);
+    assert.equal(saved.status, "active");
+    assert.equal(saved.endTime, null);
+    assert.equal(saved.endReason, null);
+    assert.equal(saved.taskDescription, original.taskDescription);
+    assert.equal(saved.capture.resumeCount, 1);
+    assert.equal(saved.capture.promptCount, original.capture.promptCount + 1);
+    assert.equal(saved.capture.successfulToolCount, 2);
+    assert.deepEqual(saved.filesEdited, ["before.mjs", "after.mjs"]);
+    assert.equal(jsonFiles(path.join(dataDir, "sessions")).length, 1);
+    break;
+  }
+  case "orphan-recovery": {
+    const deadPid = Number(execFileSync(process.execPath,
+      ["--input-type=module", "--eval", "process.stdout.write(String(process.pid))"],
+      { encoding: "utf8", timeout: 5000, windowsHide: true }));
+    assert.ok(Number.isInteger(deadPid) && deadPid > 0);
+    assert.throws(() => process.kill(deadPid, 0), error => error.code === "ESRCH");
+    const staleTimestamp = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const orphan = createSessionRecord("stale-dead-session", workspace);
+    orphan.pid = deadPid;
+    orphan.timestamp = staleTimestamp;
+    orphan.filesEdited = ["before-hard-exit.mjs"];
+    writeRecord(dataDir, orphan);
+    const recent = createSessionRecord("recent-dead-session", workspace);
+    recent.pid = deadPid;
+    writeRecord(dataDir, recent);
+    const live = createSessionRecord("stale-live-session", workspace);
+    live.timestamp = staleTimestamp;
+    writeRecord(dataDir, live);
+
+    await start();
+    await waitFor(() => readRecord(dataDir, orphan.id, "session")?.status === "orphaned");
+    const recovered = readRecord(dataDir, orphan.id, "session");
+    assert.ok(recovered.endTime);
+    assert.equal(recovered.timestamp, staleTimestamp);
+    assert.deepEqual(recovered.filesEdited, ["before-hard-exit.mjs"]);
+    assert.equal(readRecord(dataDir, recent.id, "session").status, "active");
+    assert.equal(readRecord(dataDir, live.id, "session").status, "active");
+    assert.equal(readRecord(dataDir, parentId, "session").status, "active");
+    assert.equal(records().length, 4);
+    break;
+  }
+  case "failure-counters": {
+    await start();
+    await hook("onPostToolUseFailure", {
+      sessionId: childId, toolName: "create", toolArgs: { path: "failed.mjs" },
+      error: "Creation failed",
+    });
+    await hook("onErrorOccurred", { sessionId: childId, error: "Model failed" });
+    await edit("also-failed.mjs", { toolResult: { resultType: "failure" } });
+    await hook("onPostToolUseFailure", {
+      toolName: "github-create_pull_request", toolArgs: { title: "Uncreated PR" },
+      toolResult: { textResultForLlm: '{"number":123}' },
+    });
+    await hook("onPostToolUseFailure", {
+      toolName: "powershell", toolArgs: { command: "git push" },
+    });
+    await edit("success.mjs");
+    const saved = record();
+    assert.deepEqual(saved.filesCreated, []);
+    assert.deepEqual(saved.filesEdited, ["success.mjs"]);
+    assert.deepEqual(saved.significantActions, []);
+    assert.deepEqual(saved.prsCreated, []);
+    assert.equal(saved.capture.failedToolCount, 4);
+    assert.equal(saved.capture.errorCount, 1);
+    assert.equal(saved.capture.successfulToolCount, 1);
+    assert.equal(saved.capture.recognizedToolCount, 1);
+    assert.deepEqual(saved.delegatedSessionIds, [childId]);
+    break;
+  }
+  case "paths": {
+    await start({ workingDirectory: undefined, cwd: workspace, initialPrompt: undefined });
+    await hook("onUserPromptSubmitted", { prompt: "Track actual paths" });
+    const subdir = path.join(workspace, "src");
+    mkdirSync(subdir);
+    await edit(path.join(subdir, "absolute.mjs"));
+    await edit("relative.mjs", { workingDirectory: subdir });
+    await hook("onPostToolUse", {
+      workingDirectory: workspace, toolName: "functions.apply_patch",
+      toolArgs: "*** Begin Patch\n*** Add File: added.mjs\n+x\n*** Update File: changed.mjs\n-x\n+y\n*** End Patch",
+      toolResult: { resultType: "success" },
+    });
+    await edit(path.join(workspace, ".copilot", "session-state", "private.md"));
+    const saved = record();
+    assert.equal(saved.cwd, workspace);
+    assert.equal(saved.taskDescription, "Track actual paths");
+    assert.deepEqual(saved.filesCreated, ["added.mjs"]);
+    assert.deepEqual(saved.filesEdited, ["src/absolute.mjs", "src/relative.mjs", "changed.mjs"]);
+    break;
+  }
+  case "shutdown": {
+    event("session.shutdown");
+    assert.deepEqual(records(), []);
+    await start();
+    await edit("saved.mjs");
+    event("session.shutdown");
+    const saved = record();
+    assert.equal(saved.status, "emergency-saved");
+    assert.equal(saved.endReason, "shutdown");
+    assert.equal(saved.endTime, stamp);
+    assert.deepEqual(saved.filesEdited, ["saved.mjs"]);
+    assert.equal(saved.capture.summarySource, "taskDescription");
+    event("session.shutdown");
+    assert.deepEqual(record(), saved);
+    break;
+  }
+  case "cross-repo-paths": {
+    const childWorkspace = path.resolve("delegated-workspace");
+    mkdirSync(childWorkspace);
+    execFileSync("git", ["init", "--quiet", childWorkspace], { stdio: "pipe" });
+    execFileSync("git", ["remote", "add", "origin", "https://example.invalid/owner/child.git"],
+      { cwd: childWorkspace, stdio: "pipe" });
+    const parentSubdir = path.join(workspace, "src");
+    mkdirSync(parentSubdir);
+    await start({ workingDirectory: parentSubdir });
+    await start({ sessionId: childId, workingDirectory: childWorkspace, initialPrompt: "Child task" });
+    for (const toolName of ["edit", "create"]) {
+      await edit(path.join("src", "index.mjs"), { toolName });
+      await edit(path.join("src", "index.mjs"), {
+        toolName, sessionId: childId, workingDirectory: childWorkspace,
+      });
+    }
+    await hook("onSessionEnd", { sessionId: childId, reason: "complete" });
+    await hook("onSessionEnd", { reason: "complete" });
+    const saved = record();
+    const expected = [
+      "src/index.mjs",
+      path.join(childWorkspace, "src", "index.mjs").replaceAll("\\", "/"),
+    ];
+    assert.deepEqual(saved.filesEdited, expected);
+    assert.deepEqual(saved.filesCreated, expected);
+    assert.equal(saved.cwd, parentSubdir);
+    assert.equal(saved.repo, "adapter");
+    assert.equal(saved.repoFull, "owner/adapter");
+    assert.equal(saved.capture.successfulToolCount, 4);
+    break;
+  }
+  case "compaction": {
+    await start();
+    await edit("before.mjs");
+    event("session.compaction_complete");
+    await waitFor(() => record().capture.compactionCount === 1);
+    await hook("onUserPromptSubmitted", { prompt: "After compaction" });
+    await edit("after.mjs");
+    await hook("onSessionEnd", { reason: "complete" });
+    assert.equal(record().capture.compactionCount, 1);
+    assert.equal(record().capture.promptCount, 2);
+    assert.deepEqual(record().filesEdited, ["before.mjs", "after.mjs"]);
+    break;
+  }
+  case "tools": {
+    await start();
+    const args = { summary: "Improved capture", category: "tooling", idempotencyKey: "work-123" };
+    const responses = await Promise.all([
+      tool("save_to_brag_sheet", args), tool("save_to_brag_sheet", args),
+    ]);
+    assert.equal(responses.filter(value => value.includes("Already saved")).length, 1);
+    const entries = readRecords(dataDir, { type: "entry" });
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].sessionId, parentId);
+    assert.equal(entries[0].repo, "adapter");
+    const invalid = await tool("save_to_brag_sheet", { summary: "" });
+    assert.equal(invalid.resultType, "failure");
+    assert.match(await tool("review_brag_sheet", {}), /Improved capture/);
+    assert.match(await tool("generate_work_log", {}), /Work log generated/);
+    assert.match(readFileSync(path.join(dataDir, "work-log.md"), "utf8"), /Improved capture/);
+    break;
+  }
+  case "concurrent-hooks": {
+    await start();
+    await Promise.all([
+      edit("one.mjs"),
+      edit("two.mjs"),
+      start({ sessionId: childId, initialPrompt: "Child task" }),
+      edit("three.mjs", { sessionId: childId }),
+      hook("onPostToolUseFailure", { toolName: "edit" }),
+      hook("onErrorOccurred", { error: "failure" }),
+      hook("onUserPromptSubmitted", { prompt: "Continue" }),
+      hook("onSessionEnd", { sessionId: childId, reason: "complete" }),
+      event("session.compaction_complete"),
+    ]);
+    await hook("onSessionEnd", { reason: "complete" });
+    const saved = record();
+    assert.deepEqual([...saved.filesEdited].sort(), ["one.mjs", "three.mjs", "two.mjs"]);
+    assert.equal(saved.capture.successfulToolCount, 3);
+    assert.equal(saved.capture.failedToolCount, 1);
+    assert.equal(saved.capture.errorCount, 1);
+    assert.equal(saved.capture.promptCount, 2);
+    assert.equal(saved.capture.resumeCount, 0);
+    assert.equal(saved.capture.compactionCount, 1);
+    assert.equal(saved.taskDescription, "Fix adapter capture");
+    assert.deepEqual(saved.delegatedSessionIds, [childId]);
+    break;
+  }
+  case "shutdown-during-hooks": {
+    await start();
+    const pending = [
+      edit("one.mjs"), edit("two.mjs"),
+      hook("onPostToolUseFailure", { toolName: "edit" }),
+    ];
+    event("session.shutdown");
+    await Promise.all(pending);
+    const saved = record();
+    assert.equal(saved.status, "emergency-saved");
+    assert.equal(saved.capture.summarySource, "taskDescription");
+    assert.equal(saved.capture.successfulToolCount, 2);
+    assert.equal(saved.capture.failedToolCount, 1);
+    assert.deepEqual(saved.filesEdited, ["one.mjs", "two.mjs"]);
+    break;
+  }
+  default:
+    assert.fail(`Unknown scenario: ${process.argv[2]}`);
+}
+noErrors();

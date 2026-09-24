@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 
 import { ensureDir } from "../lib/paths.mjs";
 import { loadConfig } from "../lib/config.mjs";
-import { readRecords } from "../lib/storage.mjs";
+import { readRecords, writeRecord } from "../lib/storage.mjs";
 import {
   saveBragEntry,
   reviewBragEntries,
@@ -44,9 +44,9 @@ function makeCtx(subdir) {
 // ── saveBragEntry ───────────────────────────────────────────────────────────
 
 describe("operations saveBragEntry", () => {
-  it("saves a valid entry and returns ok: true", () => {
+  it("saves a valid entry and returns ok: true", async () => {
     const ctx = makeCtx("save-basic");
-    const result = saveBragEntry({
+    const result = await saveBragEntry({
       summary: "Fixed critical prod bug",
       category: "bugfix",
       impact: "Restored service for 1000 users",
@@ -64,18 +64,18 @@ describe("operations saveBragEntry", () => {
     assert.ok(existsSync(result.filePath));
   });
 
-  it("persists to disk and is readable", () => {
+  it("persists to disk and is readable", async () => {
     const ctx = makeCtx("save-persist");
-    saveBragEntry({ summary: "Shipped feature X" }, ctx);
+    await saveBragEntry({ summary: "Shipped feature X" }, ctx);
 
     const records = readRecords(ctx.dataDir, { type: "entry" });
     assert.equal(records.length, 1);
     assert.equal(records[0].summary, "Shipped feature X");
   });
 
-  it("returns ok: false for invalid category", () => {
+  it("returns ok: false for invalid category", async () => {
     const ctx = makeCtx("save-bad-cat");
-    const result = saveBragEntry({
+    const result = await saveBragEntry({
       summary: "Did work",
       category: "nonexistent-category",
     }, ctx);
@@ -87,41 +87,41 @@ describe("operations saveBragEntry", () => {
     assert.ok(result.validCategories.includes("pr"));
   });
 
-  it("returns ok: false for empty summary", () => {
+  it("returns ok: false for empty summary", async () => {
     const ctx = makeCtx("save-empty");
-    const result = saveBragEntry({ summary: "" }, ctx);
+    const result = await saveBragEntry({ summary: "" }, ctx);
 
     assert.equal(result.ok, false);
     assert.equal(result.code, "empty_summary");
   });
 
-  it("returns ok: false for whitespace-only summary", () => {
+  it("returns ok: false for whitespace-only summary", async () => {
     const ctx = makeCtx("save-whitespace");
-    const result = saveBragEntry({ summary: "   " }, ctx);
+    const result = await saveBragEntry({ summary: "   " }, ctx);
 
     assert.equal(result.ok, false);
     assert.equal(result.code, "empty_summary");
   });
 
-  it("returns ok: false for newline/tab-only summary", () => {
+  it("returns ok: false for newline/tab-only summary", async () => {
     const ctx = makeCtx("save-tabs");
-    const result = saveBragEntry({ summary: "\n\t" }, ctx);
+    const result = await saveBragEntry({ summary: "\n\t" }, ctx);
 
     assert.equal(result.ok, false);
     assert.equal(result.code, "empty_summary");
   });
 
-  it("saves without category (null)", () => {
+  it("saves without category (null)", async () => {
     const ctx = makeCtx("save-no-cat");
-    const result = saveBragEntry({ summary: "Generic work" }, ctx);
+    const result = await saveBragEntry({ summary: "Generic work" }, ctx);
 
     assert.equal(result.ok, true);
     assert.equal(result.entry.category, null);
   });
 
-  it("saves with tags array", () => {
+  it("saves with tags array", async () => {
     const ctx = makeCtx("save-tags");
-    const result = saveBragEntry({
+    const result = await saveBragEntry({
       summary: "Work with tags",
       tags: ["perf", "ci"],
     }, ctx);
@@ -130,24 +130,76 @@ describe("operations saveBragEntry", () => {
     assert.deepEqual(result.entry.tags, ["perf", "ci"]);
   });
 
-  it("sanitizes summary text", () => {
+  it("sanitizes summary text", async () => {
     const ctx = makeCtx("save-sanitize");
-    const result = saveBragEntry({
+    const result = await saveBragEntry({
       summary: "Fixed bug\nwith newline | and pipe",
     }, ctx);
 
     assert.equal(result.ok, true);
     assert.ok(!result.entry.summary.includes("\n"));
   });
+
+  it("deduplicates repeated saves in the same session", async () => {
+    const ctx = makeCtx("save-idempotent-session");
+    const args = {
+      summary: "Recovered repository administration access",
+      category: "investigation",
+      repo: "example",
+      sessionId: "session-retry",
+    };
+
+    const first = await saveBragEntry(args, ctx);
+    const second = await saveBragEntry(args, ctx);
+
+    assert.equal(first.ok, true);
+    assert.equal(first.deduplicated, false);
+    assert.equal(second.ok, true);
+    assert.equal(second.deduplicated, true);
+    assert.equal(second.entry.id, first.entry.id);
+    assert.equal(readRecords(ctx.dataDir, { type: "entry" }).length, 1);
+  });
+
+  it("deduplicates concurrent saves with an explicit source key", async () => {
+    const ctx = makeCtx("save-idempotent-key");
+    const args = {
+      summary: "Documented a migration decision",
+      idempotencyKey: "session-123:source-event-456",
+    };
+
+    const results = await Promise.all([
+      saveBragEntry(args, ctx),
+      saveBragEntry(args, ctx),
+    ]);
+
+    assert.equal(results.filter((result) => result.deduplicated).length, 1);
+    assert.equal(results[0].entry.id, results[1].entry.id);
+    assert.equal(readRecords(ctx.dataDir, { type: "entry" }).length, 1);
+  });
 });
 
 // ── reviewBragEntries ───────────────────────────────────────────────────────
 
 describe("operations reviewBragEntries", () => {
-  it("returns records and metadata", () => {
+  it("includes recent activity from a session that began in an old shard", () => {
+    const ctx = makeCtx("review-resumed");
+    ctx.config.output.includeSessionLog = true;
+    const timestamp = new Date(Date.now() - 90 * 86400000).toISOString();
+    writeRecord(ctx.dataDir, {
+      id: "old-resumed", type: "session", timestamp,
+      summary: "Recent resumed work", filesEdited: ["today.mjs"],
+      capture: { lastEventAt: new Date().toISOString(), resumeCount: 1 },
+    });
+    const result = reviewBragEntries({ weeks: 4 }, ctx);
+    assert.equal(result.records.length, 1);
+    assert.equal(result.records[0].timestamp, timestamp);
+    assert.match(result.markdown, /Recent resumed work/);
+  });
+
+  it("returns records and metadata", async () => {
     const ctx = makeCtx("review-basic");
-    saveBragEntry({ summary: "Entry 1", category: "pr" }, ctx);
-    saveBragEntry({ summary: "Entry 2", category: "bugfix" }, ctx);
+    await saveBragEntry({ summary: "Entry 1", category: "pr" }, ctx);
+    await saveBragEntry({ summary: "Entry 2", category: "bugfix" }, ctx);
 
     const result = reviewBragEntries({ weeks: 4 }, ctx);
 
@@ -177,10 +229,10 @@ describe("operations reviewBragEntries", () => {
     assert.equal(result.weeks, 4);
   });
 
-  it("respects weeks parameter for filtering", () => {
+  it("respects weeks parameter for filtering", async () => {
     const ctx = makeCtx("review-filter");
     // Create an entry (it will be recent)
-    saveBragEntry({ summary: "Recent entry" }, ctx);
+    await saveBragEntry({ summary: "Recent entry" }, ctx);
 
     const result = reviewBragEntries({ weeks: 1 }, ctx);
     assert.equal(result.ok, true);
@@ -191,9 +243,9 @@ describe("operations reviewBragEntries", () => {
 // ── generateWorkLog ─────────────────────────────────────────────────────────
 
 describe("operations generateWorkLog", () => {
-  it("generates markdown file and returns metadata", () => {
+  it("generates markdown file and returns metadata", async () => {
     const ctx = makeCtx("gen-basic");
-    saveBragEntry({ summary: "Built deployment pipeline", category: "infrastructure" }, ctx);
+    await saveBragEntry({ summary: "Built deployment pipeline", category: "infrastructure" }, ctx);
 
     const outputPath = join(ctx.dataDir, "work-log.md");
     const result = generateWorkLog({ outputPath }, ctx);
@@ -209,9 +261,9 @@ describe("operations generateWorkLog", () => {
     assert.ok(content.includes("WEEKLY_ENTRIES_START"));
   });
 
-  it("uses default output path when omitted", () => {
+  it("uses default output path when omitted", async () => {
     const ctx = makeCtx("gen-default");
-    saveBragEntry({ summary: "Some work" }, ctx);
+    await saveBragEntry({ summary: "Some work" }, ctx);
 
     const result = generateWorkLog({}, ctx);
 

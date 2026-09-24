@@ -56,13 +56,17 @@ Plus three tools the agent can call on your behalf:
 
 | Runtime | Manual tools | Auto-tracking | Status |
 |---------|-------------|---------------|--------|
-| **Copilot CLI** | ✅ Full | ✅ Full | Production |
+| **Copilot CLI** | ✅ Full | ✅ Full | Experimental extension API |
 | **MCP hosts** (Claude, Cursor, VS Code) | ✅ Full | ⚠️ Phase 2 | Beta |
 | **Agency** | ✅ Full | ⚠️ Phase 2 | Beta |
 
 **MCP / Agency users:** The three tools (`save_to_brag_sheet`, `review_brag_sheet`, `generate_work_log`) work fully. Automatic session tracking (files edited, PRs created, git actions) requires the Copilot CLI `joinSession()` runtime and is not yet available in other hosts. For now, say `"brag — <accomplishment>"` to capture work manually.
 
-**Copilot CLI users:** Full automatic tracking works today — no action needed.
+**Copilot CLI users:** Automatic tracking requires the interactive CLI to load
+the extension and approve its hooks. The underlying `joinSession()` API is
+experimental; prompt-only (`-p`) runs may not load JavaScript extensions.
+Check that session records and capture counters appear before relying on a
+work log as complete. MCP tools remain available for explicit saves.
 
 ### When the agent will use this
 
@@ -154,8 +158,10 @@ Every Copilot CLI session automatically produces a JSON record like this:
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "type": "session",
+  "extensionVersion": "1.2.0",
   "timestamp": "2025-04-14T14:30:00.000Z",
   "endTime": "2025-04-14T15:45:00.000Z",
+  "endReason": "complete",
   "repo": "copilot-brag-sheet",
   "branch": "main",
   "cwd": "/home/user/repos/copilot-brag-sheet",
@@ -164,7 +170,17 @@ Every Copilot CLI session automatically produces a JSON record like this:
   "prsCreated": [],
   "significantActions": ["git commit", "git push"],
   "taskDescription": "Add Microsoft preset support to config",
-  "status": "finalized"
+  "status": "finalized",
+  "capture": {
+    "promptCount": 2,
+    "successfulToolCount": 8,
+    "failedToolCount": 1,
+    "errorCount": 0,
+    "recognizedToolCount": 4,
+    "compactionCount": 0,
+    "resumeCount": 0,
+    "summarySource": "finalMessage"
+  }
 }
 ```
 
@@ -282,10 +298,24 @@ Session Start ──► Track files, PRs, git actions ──► Session End
 ### Session State Machine
 
 ```
-active ──► finalized        (normal session end)
-active ──► emergency-saved  (process killed / crash)
-active ──► orphaned         (recovered by next session)
+active ──► finalized        (normal completion or user exit)
+active ──► incomplete       (error, abort, or timeout)
+active ──► emergency-saved  (process shutdown)
+active ──► orphaned         (recovered after an unobserved process exit)
+  ▲
+  └──────── resume          (same record and evidence are reused)
 ```
+
+Recent-work reviews and session-log grouping use the session's latest observed
+activity, while `timestamp` remains its original start time. A resumed session
+appears once with its accumulated evidence; this is not a per-event timeline.
+Manual entries continue to use their creation time.
+
+If the host terminates the extension without delivering an end event, the
+extension attempts a synchronous emergency save on transport closure or
+catchable process exit. Hard termination (including Windows force termination)
+cannot run these handlers: incremental evidence remains on disk, and a later
+session marks stale records with dead process IDs as `orphaned`.
 
 ### Storage Layout
 
@@ -375,6 +405,7 @@ Save a work entry to your impact log.
 | `tags` | string[] | | Tags for filtering |
 | `repo` | string | | Repository name (auto-detected if omitted) |
 | `branch` | string | | Branch name (auto-detected if omitted) |
+| `idempotencyKey` / `idempotency_key` | string | | Stable source ID for retry-safe saves (camelCase in the extension, snake_case over MCP) |
 
 ### review_brag_sheet
 

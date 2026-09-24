@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Added
+
+- **Capture health metadata** — session records now include prompt, successful/failed tool, recognized-tool, compaction, and resume counters without storing raw diagnostic payloads. Session logs surface lifecycle status and capture coverage.
+- **Idempotent entry saves** — repeated saves in the same session now return the existing entry. MCP callers can supply `idempotency_key` for stable source-backed retries and backfills.
+
+### Changed
+
+- **Resumed sessions reuse their existing record** instead of creating another file for the same session ID. Duplicate persisted versions of one record ID are collapsed on read without deleting source files.
+- **Interrupted sessions are explicit** — error, abort, and timeout endings use `status: "incomplete"` with an `endReason`; normal completion and user exit remain `finalized`.
+- **Copilot CLI compatibility wording** now identifies the `joinSession()` extension surface as experimental.
+
+### Fixed
+
+- **Current Copilot SDK hook fields** — repository detection now uses `workingDirectory`, and `initialPrompt` is captured at session start. The previous `input.cwd` lookup caused missing repository metadata.
+- **Empty session summaries** — session finalization now persists the sanitized task description when the SDK does not provide an optional `finalMessage`.
+- **Modern tool capture** — `apply_patch`, namespaced tool names, and common file-path argument variants are recognized. Failed tool calls are counted for diagnostics but never recorded as completed work.
+- **Subagent lifecycle isolation** — child session start/end hooks no longer replace or prematurely finalize the parent session record; delegated activity is attributed to the parent.
+- **Concurrent hook persistence** — overlapping tool events and shutdown no longer overwrite newer capture state. Paths from other repositories retain their absolute location rather than colliding with parent-repository paths.
+- **Resumed-session reviews** — recent-work filtering, ordering, and session-log grouping use latest activity, including sessions stored in older shards. Duplicate session versions are merged before filtering, and automatic summaries refresh when resumed work ends.
+- **Host-disconnect fallback** — active sessions attempt a synchronous emergency save on stdin closure and catchable process exit, even when the SDK omits its shutdown event. Hard termination still relies on incremental writes and later orphan recovery.
+
 ## [1.2.0] — 2026-05-26
 
 ### Added

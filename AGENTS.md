@@ -123,7 +123,7 @@ This repo has **no build step** (ESM runs directly on Node 18+) and **no
 linter configured** today. The full toolbox is `node --test`.
 
 ```bash
-# Run all 177 tests (ubuntu/macos/windows × Node 18/20/22 in CI)
+# Run the full suite (ubuntu/macos/windows × Node 18/20/22 in CI)
 npm test
 
 # Run a single test file
@@ -216,25 +216,27 @@ real bug reports). Don't change them without an issue and discussion first.
 
 ## 5. Testing strategy
 
-Current state: **184 tests, all green, run cross-platform in CI.** Counts
-per file (verify with `Select-String -Pattern '^\s*it\('`):
+Current state: **233 tests**, run cross-platform in CI. Two POSIX signal
+scenarios are skipped on Windows, where those signals force termination.
+Counts include the parameterized adapter scenarios:
 
 | File | Tests | Covers |
 |---|---:|---|
-| `test/heuristics.test.mjs` | 34 | Tool classification sets, extractFilePath, extractPrInfo, detectShellGitAction, isBragRequest (incl. mixed-prompt regression), classifyToolUse. |
+| `test/heuristics.test.mjs` | 39 | Tool classification sets, apply_patch/path extraction, namespaced tools, failure exclusion, extractPrInfo, git actions, isBragRequest, classifyToolUse. |
 | `test/extension.test.mjs` | 32 | Session record lifecycle, file tracking, significant actions, manual entry creation, review/generate flow, brag/PR/git smoke tests (importing from lib/heuristics.mjs). |
+| `test/extension-adapter.test.mjs` | 22 | Actual adapter wiring in isolated subprocesses: resume, subagents, concurrent hooks, cross-repository paths, exit/disconnect recovery, and tools. |
 | `test/git-backup.test.mjs` | 19 | `ensureGitRepo`, `addRemote`, `backupToGit` with a mocked `git` runner. |
-| `test/mcp-server.test.mjs` | 18 | MCP server tool handlers via buildServer(), Zod validation, pagination, structured output. |
-| `test/operations.test.mjs` | 16 | Shared saveBragEntry, reviewBragEntries, generateWorkLog with real disk I/O. |
-| `test/render.test.mjs` | 15 | Markdown rendering, week boundaries (UTC), category grouping, escaping, taskDescription fallback. |
-| `test/storage.test.mjs` | 12 | Atomic JSON/text writes, shard layout, filter semantics, update flow. |
+| `test/mcp-server.test.mjs` | 20 | MCP protocol, validation, activity-ordered pagination, structured output, idempotent retries. |
+| `test/operations.test.mjs` | 19 | Shared save/review/generate, concurrent retries, resumed-session lookback, and real disk I/O. |
+| `test/render.test.mjs` | 17 | Markdown rendering, UTC weeks, latest-activity grouping, categories, escaping, summary fallback, capture health. |
+| `test/storage.test.mjs` | 17 | Atomic writes, filters, cross-shard duplicate merging, stable-ID reads, multi-process idempotency, update flow. |
 | `test/config.test.mjs` | 9 | Default merge, microsoft preset, category resolution. |
-| `test/records.test.mjs` | 8 | Record factories, sanitization, file-path dedup. |
-| `test/paths.test.mjs` | 7 | Per-platform data dir resolution, env-var overrides. |
+| `test/records.test.mjs` | 15 | Record factories, sanitization, file-path dedup, capture counters, resumed summaries, lifecycle, subagent identity. |
+| `test/paths.test.mjs` | 9 | Per-platform data dir resolution, env-var overrides, current/legacy SDK working-directory fields. |
 | `test/lock.test.mjs` | 7 | Lock acquisition, stale-PID cleanup, contention. |
-| `test/hooks.test.mjs` | 6 | Agency PostToolUse hook subprocess tests: classification, malformed input, stdout purity, camelCase compat. |
+| `test/hooks.test.mjs` | 7 | PostToolUse hook subprocess tests: classification including apply_patch, malformed input, stdout purity, camelCase compat. |
 | `test/pack-smoke.test.mjs` | 1 | Tarball validation, install simulation. |
-| **Total** | **184** | |
+| **Total** | **233** | |
 
 **What's covered:**
 
@@ -250,17 +252,17 @@ per file (verify with `Select-String -Pattern '^\s*it\('`):
 
 - Hooks firing inside a real Copilot SDK runtime — `extension.mjs`
   imports from `@github/copilot-sdk/extension`, which only resolves
-  inside the host. We test the pure helpers; integration is currently
-  manual smoke testing.
+  inside the host. Isolated adapter subprocess tests exercise the unmodified
+  entry point through a fake SDK; real host delivery requires manual smoke tests.
 - `bin/setup.mjs` happy path (interactive prompts).
 - `install.sh` / `install.ps1` — covered by **install-smoke** matrix in
   CI (Linux, macOS, Windows × PS 5.1 and pwsh 7+) but not by `node --test`.
-- Real-process orphan recovery (we cover the `isProcessAlive` branch in
-  unit tests, not the cross-process scenario).
+- Forced termination itself cannot run cleanup. Orphan recovery is covered
+  with a terminated subprocess; PID reuse and machine-reboot scenarios are not.
 
 **Roadmap to better coverage** lives in [`docs/testing-strategy.md`](docs/testing-strategy.md):
-mock-host hooks tests using a fake `joinSession` shim, plus subprocess
-nightlies that drive `node extension.mjs` end-to-end through stdio.
+implemented mock-host adapter coverage and planned subprocess nightlies that
+drive `node extension.mjs` end-to-end through stdio.
 
 When adding tests:
 
@@ -471,7 +473,7 @@ proving distribution conversion before fanning out further.
 - [`ROADMAP.md`](ROADMAP.md) — prioritized backlog. **Read before proposing new work.**
 - [`CHANGELOG.md`](CHANGELOG.md) — per-version notes. Reflects what shipped, why, and which bugs each release fixed.
 - [`SECURITY.md`](SECURITY.md) — Microsoft's standard responsible-disclosure pointer.
-- [`docs/testing-strategy.md`](docs/testing-strategy.md) — current coverage + plan to add mock-host hooks tests and subprocess nightly E2E.
+- [`docs/testing-strategy.md`](docs/testing-strategy.md) — current adapter coverage and planned subprocess nightly E2E.
 - [`docs/security-model.md`](docs/security-model.md) — threat model, data flow, redaction plan.
 - [`docs/cross-engine-spec.md`](docs/cross-engine-spec.md) — MCP + Claude Code plugin design.
 - [`docs/backfill-guide.md`](docs/backfill-guide.md) — user-facing how-to for back-filling history.

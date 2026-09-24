@@ -45,6 +45,18 @@ test("renderMarkdown renders a single categorized entry", () => {
   assert.match(output, /- \*\*\[copilot-brag-sheet\] Shipped feature\*\* — Helped customers/);
 });
 
+test("renderMarkdown groups resumed sessions by activity while retaining their start time", () => {
+  const record = {
+    type: "session", timestamp: "2025-01-01T10:00:00Z",
+    capture: { lastEventAt: "2025-04-09T12:30:00Z" },
+    summary: "Resumed work",
+  };
+  const output = renderMarkdown([record], { includeSessionLog: true });
+  assert.match(output, /## Week of 2025-04-07/);
+  assert.match(output, /\| Apr 9 12:30 \| Resumed work/);
+  assert.equal(record.timestamp, "2025-01-01T10:00:00Z");
+});
+
 test("renderMarkdown orders multiple weeks newest first", () => {
   const output = renderMarkdown([
     { type: "entry", timestamp: "2025-01-02T10:00:00Z", summary: "Older", category: "pr", impact: null, repo: null },
@@ -147,6 +159,29 @@ test("renderMarkdown falls back to taskDescription when summary is absent", () =
   ], { includeSessionLog: true });
 
   assert.match(output, /Fix auth regression in login flow/);
+});
+
+test("renderMarkdown surfaces session status and capture coverage", () => {
+  const output = renderMarkdown([
+    {
+      type: "session",
+      timestamp: "2025-01-08T10:30:00Z",
+      summary: "Investigated capture reliability",
+      repo: "copilot-brag-sheet",
+      filesEdited: [],
+      filesCreated: [],
+      status: "incomplete",
+      endReason: "timeout",
+      capture: {
+        promptCount: 1,
+        successfulToolCount: 4,
+        recognizedToolCount: 0,
+      },
+    },
+  ], { includeSessionLog: true });
+
+  assert.match(output, /incomplete \(timeout\)/);
+  assert.match(output, /1 prompts, 0\/4 tools/);
 });
 
 test("renderReviewSummary filters to requested week window", () => {

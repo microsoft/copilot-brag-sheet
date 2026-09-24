@@ -9,9 +9,10 @@ Prioritized by impact ÷ effort. Contributions welcome — open an issue to disc
 The README promises "automatic" capture but the tool currently requires saying "brag —". Closing that gap is the highest-value work.
 
 - [ ] **Summary inference** — auto-detect significant work from session signals (PR opened, on-call resolved, design merged) and prompt the user to save. Closes the README's "automatic" promise. [#7](https://github.com/microsoft/copilot-brag-sheet/issues/7)
+- [x] **Capture reliability** — align with current Copilot SDK hook payloads, track `apply_patch`, preserve resumed sessions, isolate subagent lifecycle events, expose capture health, and make entry retries idempotent.
 - [ ] **Publish dev.to blog post** — draft at [`docs/blog-post-devto.md`](docs/blog-post-devto.md). Publish with canonical link back to the repo README.
-- [ ] **GitHub Pages landing page with structured data** — JSON-LD `SoftwareApplication` + `HowTo` schema and OpenGraph tags so search results and link previews are accurate.
-- [ ] **OpenGraph image** for share previews in Slack/Teams.
+- [x] **GitHub Pages landing page with structured data** — JSON-LD `SoftwareApplication` + `HowTo` schema and OpenGraph tags so search results and link previews are accurate.
+- [x] **OpenGraph image** for share previews in Slack/Teams.
 - [ ] **Source attribution** — request source links where SKILL.md is mirrored on third-party sites without attribution.
 - [ ] **Submit SKILL.md to additional skill registries** — public catalogs that accept community submissions (e.g. awesome-* lists).
 - [ ] **Internal Microsoft channels** — share the project in relevant Microsoft engineering and Connect-prep channels.
@@ -20,6 +21,7 @@ The README promises "automatic" capture but the tool currently requires saying "
 
 See [`docs/cross-engine-spec.md`](docs/cross-engine-spec.md).
 
+- [ ] **Refresh packaging against Agent Plugins 1.0** — keep portable skills/MCP at the plugin root, put Copilot-specific hooks under `com.github.copilot/`, and retain `extension.mjs` only for interactive CLI event capture.
 - [x] **MCP server** (`mcp-server.mjs`) — wraps the existing `lib/` modules in MCP protocol so any MCP-compatible client (Copilot CLI, Claude Code, VS Code, Codex) can use the tools. Shipped in v1.1.0.
 - [x] **Plugin manifest** (`.claude-plugin/plugin.json`) — declares skills, hooks, MCP server. Shipped in v1.1.0.
 - [x] **Phase 1 — Agency plugin** (internal MSFT) — `agency.json`, `.mcp.json`, `hooks/hooks.json`, `hooks/post-tool-use.mjs`. Classification-only PostToolUse hook via `lib/heuristics.mjs`. Shipped in v1.2.0.

@@ -1,4 +1,4 @@
-import test from "node:test";
+import test, { after } from "node:test";
 import assert from "node:assert/strict";
 import {
   existsSync,
@@ -6,22 +6,33 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import {
   atomicWriteJSON,
   atomicWriteText,
   writeRecord,
+  writeRecordOnce,
+  readRecord,
   readRecords,
   updateRecord,
   logError,
 } from "../lib/storage.mjs";
 
+const tempDirs = [];
 function makeTempDir() {
-  return mkdtempSync(join(tmpdir(), "copilot-brag-sheet-storage-"));
+  const dir = mkdtempSync(join(tmpdir(), "copilot-brag-sheet-storage-"));
+  tempDirs.push(dir);
+  return dir;
 }
+after(() => {
+  for (const dir of tempDirs) rmSync(dir, { recursive: true, force: true });
+});
 
 function ensureDir(dirPath) {
   mkdirSync(dirPath, { recursive: true });
@@ -115,6 +126,46 @@ test("writeRecord writes entry records under entries shards", () => {
   assert.deepEqual(JSON.parse(readFileSync(writtenPath, "utf8")), record);
 });
 
+test("writeRecordOnce is idempotent under concurrent retries", async () => {
+  const tempDir = makeTempDir();
+  const record = makeRecord({
+    id: "stable-entry",
+    type: "entry",
+    timestamp: "2025-02-03T04:05:06.000Z",
+  });
+
+  const [first, second] = await Promise.all([
+    writeRecordOnce(tempDir, record),
+    writeRecordOnce(tempDir, { ...record, timestamp: "2025-02-03T04:05:07.000Z" }),
+  ]);
+
+  assert.equal([first.created, second.created].filter(Boolean).length, 1);
+  assert.equal(readRecords(tempDir, { type: "entry" }).length, 1);
+  assert.equal(readRecord(tempDir, "stable-entry").id, "stable-entry");
+});
+
+test("writeRecordOnce serializes retries across independent processes", async () => {
+  const tempDir = makeTempDir();
+  const storageUrl = new URL("../lib/storage.mjs", import.meta.url).href;
+  const code = `
+    import { writeRecordOnce } from ${JSON.stringify(storageUrl)};
+    const result = await writeRecordOnce(process.argv[1], {
+      id: "cross-process-entry", type: "entry", timestamp: new Date().toISOString(),
+      summary: "One source event"
+    });
+    process.stdout.write(JSON.stringify({ created: result.created, id: result.record.id }));
+  `;
+  const run = promisify(execFile);
+  const results = await Promise.all([1, 2, 3].map(() =>
+    run(process.execPath, ["--input-type=module", "-e", code, tempDir],
+      { windowsHide: true, timeout: 15000 }),
+  ));
+  const parsed = results.map(result => JSON.parse(result.stdout));
+  assert.equal(parsed.filter(result => result.created).length, 1);
+  assert.ok(parsed.every(result => result.id === "cross-process-entry"));
+  assert.equal(readRecords(tempDir, { type: "entry" }).length, 1);
+});
+
 test("readRecords supports basic reads and filtering", () => {
   const tempDir = makeTempDir();
   const sessionRecord = makeRecord({
@@ -188,6 +239,7 @@ test("readRecords skips non json files", () => {
     id: "session-valid",
     timestamp: "2025-04-01T00:00:00.000Z",
   });
+
   const shardDir = join(tempDir, "sessions", "2025", "04");
 
   ensureDir(shardDir);
@@ -200,6 +252,41 @@ test("readRecords skips non json files", () => {
   );
 });
 
+test("readRecords collapses duplicate persisted versions of the same session", () => {
+  const tempDir = makeTempDir();
+  writeRecord(tempDir, makeRecord({
+    id: "resumed-session",
+    timestamp: "2025-04-01T00:00:00.000Z",
+    status: "active",
+    filesEdited: ["src/first.mjs"],
+    capture: {
+      promptCount: 2,
+      successfulToolCount: 5,
+      lastEventAt: "2025-04-01T00:30:00.000Z",
+    },
+  }));
+  writeRecord(tempDir, makeRecord({
+    id: "resumed-session",
+    timestamp: "2025-04-01T01:00:00.000Z",
+    endTime: "2025-04-01T02:00:00.000Z",
+    status: "finalized",
+    filesEdited: ["src/second.mjs"],
+    capture: {
+      promptCount: 3,
+      successfulToolCount: 4,
+      lastEventAt: "2025-04-01T02:00:00.000Z",
+    },
+  }));
+
+  const records = readRecords(tempDir, { type: "session" });
+
+  assert.equal(records.length, 1);
+  assert.equal(records[0].status, "finalized");
+  assert.deepEqual(records[0].filesEdited, ["src/first.mjs", "src/second.mjs"]);
+  assert.equal(records[0].capture.promptCount, 3);
+  assert.equal(records[0].capture.successfulToolCount, 5);
+});
+
 test("updateRecord merges fields and preserves existing values", async () => {
   const tempDir = makeTempDir();
   const original = makeRecord({
@@ -210,6 +297,7 @@ test("updateRecord merges fields and preserves existing values", async () => {
     tags: [],
     repo: "copilot-brag-sheet",
   });
+
   const writtenPath = writeRecord(tempDir, original);
 
   const updated = await updateRecord(tempDir, "session-update", {
@@ -228,6 +316,51 @@ test("updateRecord merges fields and preserves existing values", async () => {
   assert.equal(persisted.category, "tooling");
   assert.deepEqual(persisted.tags, ["ship"]);
   assert.equal(persisted.repo, "copilot-brag-sheet");
+});
+
+test("stable-ID reads and updates preserve evidence from duplicate session versions", async () => {
+  const tempDir = makeTempDir();
+  writeRecord(tempDir, makeRecord({
+    id: "duplicate-session",
+    timestamp: "2025-04-01T00:00:00.000Z",
+    status: "active",
+    filesEdited: ["first.mjs"],
+    capture: { lastEventAt: "2025-04-01T03:00:00.000Z", resumeCount: 1 },
+  }));
+  writeRecord(tempDir, makeRecord({
+    id: "duplicate-session",
+    timestamp: "2025-04-01T01:00:00.000Z",
+    status: "finalized",
+    filesEdited: ["second.mjs"],
+    endTime: "2025-04-01T02:00:00.000Z",
+  }));
+
+  const current = readRecord(tempDir, "duplicate-session", "session");
+  assert.equal(current.status, "active");
+  assert.equal(current.timestamp, "2025-04-01T00:00:00.000Z");
+  assert.deepEqual(new Set(current.filesEdited), new Set(["first.mjs", "second.mjs"]));
+
+  const updated = await updateRecord(tempDir, current.id, { summary: "Resumed work" });
+  assert.deepEqual(updated.filesEdited, current.filesEdited);
+  assert.equal(updated.status, "active");
+  assert.equal(readRecord(tempDir, current.id).summary, "Resumed work");
+});
+
+test("filtered reads merge cross-shard session versions before filtering", async () => {
+  const tempDir = makeTempDir();
+  writeRecord(tempDir, makeRecord({
+    id: "cross-shard", timestamp: "2025-04-01T00:00:00.000Z", filesEdited: ["first.mjs"],
+  }));
+  writeRecord(tempDir, makeRecord({
+    id: "cross-shard", timestamp: "2025-05-01T00:00:00.000Z", filesEdited: ["second.mjs"],
+  }));
+  await updateRecord(tempDir, "cross-shard", { summary: "Merged update", repo: "updated-repo" });
+  const filtered = readRecords(tempDir, {
+    since: "2025-04-01", until: "2025-04-30T23:59:59Z", repo: "updated-repo",
+  });
+  assert.equal(filtered.length, 1);
+  assert.equal(filtered[0].summary, "Merged update");
+  assert.deepEqual(filtered[0].filesEdited, ["first.mjs", "second.mjs"]);
 });
 
 test("logError appends messages and never throws", () => {

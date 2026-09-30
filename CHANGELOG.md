@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ### Changed
 
 - **Dependency maintenance** — refresh the lockfile for MCP SDK 1.30.0, Hono 4.13.1, `@hono/node-server` 1.19.17, `body-parser` 2.3.0, `ip-address` 10.4.0, and `fast-uri` 3.1.7.
+- **Workflow dependencies** — update checkout and setup-node to v7, pin all workflow actions to full commit SHAs, and apply a seven-day Dependabot cooldown to GitHub Actions updates.
 - **Resumed sessions reuse their existing record** instead of creating another file for the same session ID. Duplicate persisted versions of one record ID are collapsed on read without deleting source files.
 - **Interrupted sessions are explicit** — error, abort, and timeout endings use `status: "incomplete"` with an `endReason`; normal completion and user exit remain `finalized`.
 - **Copilot CLI compatibility wording** now identifies the `joinSession()` extension surface as experimental.

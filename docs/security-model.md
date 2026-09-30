@@ -118,15 +118,14 @@ POSIX and on Windows for same-volume moves. Failure cleans up the tmp
 file. **Result:** OneDrive-, iCloud-, Dropbox-safe. The user never
 loses an existing record because of a crash.
 
-The same pattern is duplicated for text in
-[`extension.mjs:118-135`](../extension.mjs) (`atomicWriteText`) so
+Text writes use `atomicWriteText` in the same storage module, so
 `work-log.md` regeneration is also crash-safe.
 
 ### 2. Concurrent writers
 
 Multiple Copilot CLI sessions can overlap on the same data dir.
 `withFileLock` ([`lib/lock.mjs`](../lib/lock.mjs)) wraps every
-`updateRecord`:
+`updateRecord` and retry-safe entry creation:
 
 - `openSync(lockPath, "wx")` — atomic create, fails with `EEXIST` if held.
 - PID written into the lockfile so a stale lock can be diagnosed.
@@ -150,7 +149,33 @@ Three layers:
 - `try { logError(...) } catch {}` everywhere — see "Errors are logged,
   not thrown" in [`AGENTS.md` §4](../AGENTS.md#4-code-conventions).
 
-### 4. Network egress
+On resume, the extension reopens the existing session record by stable session
+ID instead of creating another record. Error, abort, and timeout endings are
+marked `incomplete`; they are not presented as successful completion.
+
+The same synchronous emergency save observes stdin closure, normal process
+exit, and catchable SIGTERM/SIGINT. These handlers preserve finalized and
+incomplete records. Windows force termination and SIGKILL cannot run JavaScript
+cleanup; a record may remain `active` until a subsequent session's stale-process
+recovery marks it `orphaned`. Incremental evidence is retained in either case.
+
+### 4. Retry-safe writes
+
+Entry saves associated with a session derive a stable, content-sensitive ID.
+MCP callers can instead provide an explicit `idempotency_key` tied to an
+authoritative source event. Creation is serialized with `withFileLock`, so
+concurrent retries return the existing entry rather than writing another copy.
+Only a SHA-256 digest of the source key is persisted.
+
+Duplicate versions of a session are merged before date or metadata filtering.
+Session queries inspect older shards because resumed sessions keep their
+original start timestamp and location. No historical source files are deleted.
+
+This prevents repeated delivery of the same save from producing duplicates. It
+does not silently merge separate legacy entries with different IDs; historical
+cleanup requires source-by-source review.
+
+### 5. Network egress
 
 There is none, by construction. The only network code path is git push
 in [`lib/git-backup.mjs:151-164`](../lib/git-backup.mjs), gated on
@@ -163,7 +188,7 @@ in [`lib/git-backup.mjs:151-164`](../lib/git-backup.mjs), gated on
 All three are user-controlled. We never push to a default remote, never
 auto-add a remote, never offer "send error reports" or any analytics.
 
-### 5. Markdown injection
+### 6. Markdown injection
 
 Without sanitization, an attacker (or a chatty LLM) could write
 `WEEKLY_ENTRIES_END\n# Look at me` into a summary and corrupt the
@@ -180,7 +205,7 @@ Tests cover these in [`test/records.test.mjs`](../test/records.test.mjs)
 and [`test/render.test.mjs`](../test/render.test.mjs) (pipe escaping
 end-to-end).
 
-### 6. Path traversal in tracked file paths
+### 7. Path traversal in tracked file paths
 
 `addFileToRecord` ([`lib/records.mjs:89-116`](../lib/records.mjs)):
 
@@ -188,8 +213,15 @@ end-to-end).
 - If the resolved path falls inside the repo root, we store a
   forward-slash-normalized **relative** path. Otherwise we store the
   absolute path.
+- Relative tool paths resolve against the hook working directory. Delegated
+  activity uses the parent's repository root for normalization so files in
+  different repositories do not collapse into one path.
 - Skips anything containing `.copilot/session-state` so the agent's own
   scratch space never ends up in the user's brag log.
+
+Session capture-health metadata stores counters and lifecycle state only. It
+does not store raw tool arguments, tool output, error messages, or transcript
+content.
 
 This means an LLM can't trick us into recording
 `../../../../etc/passwd` as a tracked file — it'll either become an

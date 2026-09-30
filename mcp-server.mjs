@@ -142,6 +142,11 @@ const SaveInputSchema = z.object({
   branch: z.string()
     .optional()
     .describe("Git branch name. Auto-detected from git context when omitted."),
+  idempotency_key: z.string()
+    .min(1)
+    .max(500)
+    .optional()
+    .describe("Stable source event or work-item id. Reusing it returns the existing entry instead of creating a duplicate."),
   response_format: ResponseFormatSchema,
 }).strict();
 
@@ -151,6 +156,7 @@ const SaveOutputSchema = z.object({
   category: z.string().nullable().describe("Resolved category id, or null when none was provided."),
   summary: z.string().describe("Sanitized summary actually persisted (newlines stripped, capped to 500 chars)."),
   timestamp: z.string().describe("ISO-8601 timestamp the entry was created at."),
+  deduplicated: z.boolean().describe("True when an existing entry was returned for the same idempotency key."),
 });
 
 const ReviewInputSchema = z.object({
@@ -252,7 +258,7 @@ function renderReviewMarkdown({ records, weeks, total, offset, hasMore }) {
 async function handleSaveToBragSheet(args) {
   ensureInitialized();
 
-  const result = saveBragEntry({
+  const result = await saveBragEntry({
     summary: args.summary,
     category: args.category || null,
     impact: args.impact || null,
@@ -260,6 +266,7 @@ async function handleSaveToBragSheet(args) {
     repo: args.repo || null,
     branch: args.branch || null,
     sessionId: null,
+    idempotencyKey: args.idempotency_key || null,
   }, { dataDir, config, gitConfig });
 
   if (!result.ok) {
@@ -271,6 +278,7 @@ async function handleSaveToBragSheet(args) {
         category: args.category || null,
         summary: args.summary,
         timestamp: new Date().toISOString(),
+        deduplicated: false,
       },
     );
   }
@@ -281,6 +289,7 @@ async function handleSaveToBragSheet(args) {
     category: result.entry.category,
     summary: result.entry.summary,
     timestamp: result.entry.timestamp,
+    deduplicated: result.deduplicated,
   };
 
   const text = args.response_format === "json"
@@ -301,7 +310,7 @@ async function handleReviewBragSheet(args) {
 
   // MCP-specific: sort newest-first, apply pagination
   const allRecords = result.records;
-  allRecords.sort((a, b) => (a.timestamp < b.timestamp ? 1 : a.timestamp > b.timestamp ? -1 : 0));
+  allRecords.reverse();
 
   const total = allRecords.length;
   const page = allRecords.slice(offset, offset + limit);

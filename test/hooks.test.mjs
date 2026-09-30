@@ -113,4 +113,18 @@ describe("hooks post-tool-use", () => {
     assert.equal(result.continue, true);
     assert.ok(result.classification.significantActions.includes("git push"));
   });
+
+  it("captures apply_patch files from a command-hook payload", async () => {
+    const { stdout } = await runHook({
+      tool_name: "apply_patch",
+      tool_input: {
+        patch: "*** Begin Patch\n*** Update File: src/main.mjs\n@@\n-old\n+new\n*** End Patch",
+      },
+      tool_result: { resultType: "success" },
+    });
+
+    const result = JSON.parse(stdout);
+    assert.equal(result.continue, true);
+    assert.deepEqual(result.classification.filesEdited, ["src/main.mjs"]);
+  });
 });

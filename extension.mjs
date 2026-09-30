@@ -18,15 +18,26 @@ import {
   unlinkSync,
 } from "node:fs";
 
-import { detectDataDir, detectGitConfig, ensureDir } from "./lib/paths.mjs";
+import {
+  detectDataDir,
+  detectGitConfig,
+  ensureDir,
+  resolveHookWorkingDirectory,
+} from "./lib/paths.mjs";
 import { loadConfig, getAllCategoryIds, buildUserContext } from "./lib/config.mjs";
 import {
-  writeRecord, readRecords, updateRecord, logError,
+  writeRecord, readRecord, readRecords, updateRecord, logError,
 } from "./lib/storage.mjs";
 import { ensureGitRepo, addRemote } from "./lib/git-backup.mjs";
 import {
   createSessionRecord,
-  addFileToRecord, sanitize, dedupeArray,
+  addFileToRecord,
+  captureTaskDescription,
+  finalizeSessionRecord,
+  isDelegatedSession,
+  markCaptureEvent,
+  resumeSessionRecord,
+  dedupeArray,
 } from "./lib/records.mjs";
 import { isBragRequest, classifyToolUse } from "./lib/heuristics.mjs";
 import {
@@ -39,14 +50,19 @@ if (process.env.BRAG_SHEET_DEBUG) {
   process.stderr.write("[brag-sheet] extension module loaded\n");
 }
 
+let extensionVersion = "unknown";
+try {
+  extensionVersion = JSON.parse(
+    readFile(new URL("./package.json", import.meta.url), "utf8"),
+  ).version || "unknown";
+} catch { /* best effort */ }
+
 // ── Module-level state (one session per extension process) ──────────────────
 
 let dataDir = null;
 let config = null;
 let gitConfig = null;
 let sessionRecord = null;
-let repoRoot = null;
-let firstPromptCaptured = false;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -132,6 +148,23 @@ function ensureInitialized() {
   }
 }
 
+function eventTimestamp(input) {
+  const timestamp = input?.timestamp ? new Date(input.timestamp) : new Date();
+  return Number.isNaN(timestamp.getTime())
+    ? new Date().toISOString()
+    : timestamp.toISOString();
+}
+
+function isDelegatedHook(input, invocation) {
+  return isDelegatedSession(input?.sessionId, invocation?.sessionId);
+}
+
+function persistSessionRecord() {
+  // Keep the live object until the file lock is acquired. A captured partial
+  // snapshot can overwrite newer hook events or a synchronous shutdown save.
+  return updateRecord(dataDir, sessionRecord.id, sessionRecord);
+}
+
 // Tool classification sets and helpers are now in lib/heuristics.mjs
 
 // ── Extension entry point ───────────────────────────────────────────────────
@@ -149,7 +182,6 @@ const session = await joinSession({
         // Let env vars override config.json for backward compat
         const envGitConfig = detectGitConfig();
         gitConfig = envGitConfig.enabled ? envGitConfig : (config?.git ?? { enabled: false, push: false });
-        firstPromptCaptured = false;
 
         // Initialize git repo in data dir if enabled
         if (gitConfig.enabled) {
@@ -171,15 +203,57 @@ const session = await joinSession({
           );
         }
 
-        const info = detectRepoInfo(input.cwd);
-        repoRoot = info.repoRoot;
+        const workingDirectory = resolveHookWorkingDirectory(input);
+        const existing = sessionRecord?.id === invocation.sessionId
+          ? sessionRecord
+          : readRecord(dataDir, invocation.sessionId, "session");
 
-        sessionRecord = createSessionRecord(invocation.sessionId, input.cwd);
-        sessionRecord.repo = info.repo;
-        sessionRecord.repoFull = info.repoFull;
-        sessionRecord.branch = info.branch;
+        if (isDelegatedHook(input, invocation)) {
+          sessionRecord = existing
+            || sessionRecord
+            || createSessionRecord(invocation.sessionId, process.cwd());
+          sessionRecord.extensionVersion = extensionVersion;
+          markCaptureEvent(sessionRecord, "subagent", {
+            delegatedSessionId: input.sessionId,
+            timestamp: eventTimestamp(input),
+          });
 
-        writeRecord(dataDir, sessionRecord);
+          if (existing) {
+            await persistSessionRecord();
+          } else {
+            writeRecord(dataDir, sessionRecord);
+          }
+          return;
+        }
+
+        const info = detectRepoInfo(workingDirectory);
+        if (existing?.type === "session") {
+          sessionRecord = resumeSessionRecord(existing, {
+            cwd: workingDirectory,
+            pid: process.pid,
+            timestamp: eventTimestamp(input),
+          });
+        } else {
+          sessionRecord = createSessionRecord(invocation.sessionId, workingDirectory);
+        }
+
+        sessionRecord.repo = info.repo || sessionRecord.repo;
+        sessionRecord.repoFull = info.repoFull || sessionRecord.repoFull;
+        sessionRecord.branch = info.branch || sessionRecord.branch;
+        sessionRecord.extensionVersion = extensionVersion;
+        sessionRecord.sessionStartSource = input.source || null;
+
+        if (input.initialPrompt) {
+          captureTaskDescription(sessionRecord, input.initialPrompt, {
+            timestamp: eventTimestamp(input),
+          });
+        }
+
+        if (existing?.type === "session") {
+          await persistSessionRecord();
+        } else {
+          writeRecord(dataDir, sessionRecord);
+        }
 
         recoverOrphans(dataDir).catch((e) =>
           logError(dataDir, "orphan-recovery", e),
@@ -191,18 +265,24 @@ const session = await joinSession({
       }
     },
 
-    onUserPromptSubmitted: async (input) => {
+    onUserPromptSubmitted: async (input, invocation) => {
       try {
         if (!sessionRecord || !dataDir) return;
 
-        // Capture first prompt as task description
-        if (!firstPromptCaptured && input.prompt) {
-          firstPromptCaptured = true;
-          sessionRecord.taskDescription = sanitize(input.prompt);
-          await updateRecord(dataDir, sessionRecord.id, {
-            taskDescription: sessionRecord.taskDescription,
+        if (isDelegatedHook(input, invocation)) {
+          markCaptureEvent(sessionRecord, "subagent", {
+            delegatedSessionId: input.sessionId,
+            timestamp: eventTimestamp(input),
           });
+          await persistSessionRecord();
+          return;
         }
+
+        captureTaskDescription(sessionRecord, input.prompt, {
+          timestamp: eventTimestamp(input),
+        });
+
+        await persistSessionRecord();
 
         // Build user preference context (injected BEFORE tool selection)
         const userCtx = buildUserContext(config);
@@ -229,21 +309,41 @@ const session = await joinSession({
       }
     },
 
-    onPostToolUse: async (input) => {
+    onPostToolUse: async (input, invocation) => {
       try {
         if (!sessionRecord || !dataDir) return;
 
         const classification = classifyToolUse(input);
-        let changed = false;
+        const recognized = classification.filesCreated.length > 0
+          || classification.filesEdited.length > 0
+          || classification.prsCreated.length > 0
+          || classification.significantActions.length > 0;
+        const workingDirectory = resolveHookWorkingDirectory(input, sessionRecord.cwd);
+        const recordRepo = detectRepoInfo(sessionRecord.cwd);
+        const recordRepoRoot = recordRepo.repoRoot || sessionRecord.cwd;
 
-        // File operations — apply to session record with repo-relative paths
+        const failed = input.toolResult?.resultType
+          && input.toolResult.resultType !== "success";
+        markCaptureEvent(sessionRecord, failed ? "tool-failure" : "tool-success", {
+          recognized,
+          delegatedSessionId: isDelegatedHook(input, invocation)
+            ? input.sessionId
+            : null,
+          timestamp: eventTimestamp(input),
+        });
+
+        sessionRecord.repo = sessionRecord.repo || recordRepo.repo;
+        sessionRecord.repoFull = sessionRecord.repoFull || recordRepo.repoFull;
+        sessionRecord.branch = sessionRecord.branch || recordRepo.branch;
+
+        // Use one record-relative base so files in delegated repositories stay distinct.
         for (const filePath of classification.filesCreated) {
-          addFileToRecord(sessionRecord, "create", filePath, repoRoot);
-          changed = true;
+          addFileToRecord(sessionRecord, "create",
+            path.resolve(workingDirectory, filePath), recordRepoRoot);
         }
         for (const filePath of classification.filesEdited) {
-          addFileToRecord(sessionRecord, "edit", filePath, repoRoot);
-          changed = true;
+          addFileToRecord(sessionRecord, "edit",
+            path.resolve(workingDirectory, filePath), recordRepoRoot);
         }
 
         // PR creation — dedupe by id+repo
@@ -252,7 +352,6 @@ const session = await joinSession({
           if (!existing.some(p => p.id === prInfo.id && p.repo === prInfo.repo)) {
             sessionRecord.prsCreated = [...existing, prInfo];
           }
-          changed = true;
         }
 
         // Significant actions — dedupe
@@ -260,39 +359,69 @@ const session = await joinSession({
           sessionRecord.significantActions = dedupeArray([
             ...sessionRecord.significantActions, action,
           ]);
-          changed = true;
         }
 
         // Incremental save (crash-safe)
-        if (changed) {
-          await updateRecord(dataDir, sessionRecord.id, {
-            filesEdited: sessionRecord.filesEdited,
-            filesCreated: sessionRecord.filesCreated,
-            prsCreated: sessionRecord.prsCreated,
-            significantActions: sessionRecord.significantActions,
-          });
-        }
+        await persistSessionRecord();
       } catch (err) {
         logError(dataDir, "onPostToolUse", err);
       }
     },
 
-    onSessionEnd: async (input) => {
+    onPostToolUseFailure: async (input, invocation) => {
       try {
         if (!sessionRecord || !dataDir) return;
 
-        sessionRecord.status = "finalized";
-        sessionRecord.endTime = new Date().toISOString();
+        markCaptureEvent(sessionRecord, "tool-failure", {
+          delegatedSessionId: isDelegatedHook(input, invocation)
+            ? input.sessionId
+            : null,
+          timestamp: eventTimestamp(input),
+        });
 
-        if (input.finalMessage) {
-          sessionRecord.summary = sessionRecord.summary || sanitize(input.finalMessage);
+        await persistSessionRecord();
+      } catch (err) {
+        logError(dataDir, "onPostToolUseFailure", err);
+      }
+    },
+
+    onErrorOccurred: async (input, invocation) => {
+      try {
+        if (!sessionRecord || !dataDir) return;
+
+        markCaptureEvent(sessionRecord, "error", {
+          delegatedSessionId: isDelegatedHook(input, invocation)
+            ? input.sessionId
+            : null,
+          timestamp: eventTimestamp(input),
+        });
+
+        await persistSessionRecord();
+      } catch (err) {
+        logError(dataDir, "onErrorOccurred", err);
+      }
+    },
+
+    onSessionEnd: async (input, invocation) => {
+      try {
+        if (!sessionRecord || !dataDir) return;
+
+        if (isDelegatedHook(input, invocation)) {
+          markCaptureEvent(sessionRecord, "subagent", {
+            delegatedSessionId: input.sessionId,
+            timestamp: eventTimestamp(input),
+          });
+          await persistSessionRecord();
+          return;
         }
 
-        await updateRecord(dataDir, sessionRecord.id, {
-          status: sessionRecord.status,
-          endTime: sessionRecord.endTime,
-          summary: sessionRecord.summary,
+        finalizeSessionRecord(sessionRecord, {
+          reason: input.reason,
+          finalMessage: input.finalMessage,
+          timestamp: eventTimestamp(input),
         });
+
+        await persistSessionRecord();
 
         return {
           sessionSummary: sessionRecord.summary
@@ -343,6 +472,11 @@ const session = await joinSession({
             type: "string",
             description: "Branch name (auto-detected if omitted)",
           },
+          idempotencyKey: {
+            type: "string",
+            description:
+              "Stable source event or work-item id. Reusing it returns the existing entry.",
+          },
         },
         required: ["summary"],
       },
@@ -350,7 +484,7 @@ const session = await joinSession({
         try {
           ensureInitialized();
 
-          const result = saveBragEntry({
+          const result = await saveBragEntry({
             ...args,
             repo: args.repo || sessionRecord?.repo || null,
             branch: args.branch || sessionRecord?.branch || null,
@@ -365,8 +499,9 @@ const session = await joinSession({
           }
 
           const label = result.entry.category ? ` [${result.entry.category}]` : "";
-          await session.log(`📊 Saved to brag sheet: ${result.entry.summary}`);
-          return `✅ Entry saved to brag sheet${label}: "${result.entry.summary}"`;
+          const verb = result.deduplicated ? "Already saved" : "Saved";
+          await session.log(`📊 ${verb} to brag sheet: ${result.entry.summary}`);
+          return `✅ ${verb} to brag sheet${label}: "${result.entry.summary}"`;
         } catch (err) {
           logError(dataDir, "save_to_brag_sheet", err);
           return {
@@ -448,19 +583,47 @@ const session = await joinSession({
 
 // ── Emergency shutdown save ─────────────────────────────────────────────────
 // Synchronous write — process may exit immediately after this handler.
-// Guard against downgrading "finalized" to "emergency-saved".
+// Only active records need recovery; preserve completed and incomplete records.
 
-session.on("session.shutdown", (event) => {
+function emergencySave(timestamp = new Date()) {
   try {
     if (!sessionRecord || !dataDir) return;
     if (sessionRecord.status !== "active") return;
 
+    finalizeSessionRecord(sessionRecord, {
+      reason: "shutdown",
+      timestamp,
+    });
     sessionRecord.status = "emergency-saved";
-    sessionRecord.endTime = sessionRecord.endTime || new Date().toISOString();
 
     // writeRecord is synchronous — reliable during shutdown
     writeRecord(dataDir, sessionRecord);
   } catch (err) {
-    try { logError(dataDir, "session.shutdown", err); } catch { /* noop */ }
+    try { logError(dataDir, "emergency-save", err); } catch { /* noop */ }
+  }
+}
+
+session.on("session.shutdown", (event) => emergencySave(event?.timestamp));
+process.once("exit", () => emergencySave());
+// Observe transport shutdown without consuming stdin or changing its flow mode.
+process.stdin.once("end", () => emergencySave());
+process.stdin.once("close", () => emergencySave());
+for (const [signal, exitCode] of [["SIGTERM", 143], ["SIGINT", 130]]) {
+  process.once(signal, () => {
+    emergencySave();
+    process.exit(exitCode);
+  });
+}
+
+session.on("session.compaction_complete", (event) => {
+  try {
+    if (!sessionRecord || !dataDir) return;
+    markCaptureEvent(sessionRecord, "compaction", {
+      timestamp: event?.timestamp || new Date(),
+    });
+    persistSessionRecord()
+      .catch((err) => logError(dataDir, "session.compaction_complete", err));
+  } catch (err) {
+    try { logError(dataDir, "session.compaction_complete", err); } catch { /* noop */ }
   }
 });

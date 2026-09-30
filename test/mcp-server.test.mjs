@@ -15,7 +15,7 @@ import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
-import { readRecords } from "../lib/storage.mjs";
+import { readRecords, writeRecord } from "../lib/storage.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_PATH = join(__dirname, "..", "mcp-server.mjs");
@@ -235,6 +235,7 @@ describe("mcp-server: tools/list", () => {
     assert.ok(save.inputSchema.properties.summary);
     assert.ok(save.inputSchema.properties.category);
     assert.ok(save.inputSchema.properties.tags);
+    assert.ok(save.inputSchema.properties.idempotency_key);
 
     const review = tools.find((t) => t.name === "review_brag_sheet");
     assert.ok(review.inputSchema.properties.weeks, "review missing weeks");
@@ -261,7 +262,7 @@ describe("mcp-server: tools/list", () => {
     const save = tools.find((t) => t.name === "save_to_brag_sheet");
     assert.deepEqual(
       Object.keys(save.outputSchema.properties).sort(),
-      ["category", "entryId", "success", "summary", "timestamp"],
+      ["category", "deduplicated", "entryId", "success", "summary", "timestamp"],
     );
 
     const review = tools.find((t) => t.name === "review_brag_sheet");
@@ -398,9 +399,57 @@ describe("mcp-server: save_to_brag_sheet", () => {
     assert.equal(typeof parsed.entryId, "string");
     assert.deepEqual(parsed, res.structuredContent);
   });
+
+  it("deduplicates retries with the same idempotency key", async () => {
+    const request = {
+      method: "tools/call",
+      params: {
+        name: "save_to_brag_sheet",
+        arguments: {
+          summary: "Recovered a repository access workflow",
+          category: "investigation",
+          idempotency_key: "source-session-1:event-2",
+        },
+      },
+    };
+    const { responses } = await runRpc([
+      { jsonrpc: "2.0", id: 1, ...request },
+      { jsonrpc: "2.0", id: 2, ...request },
+    ]);
+
+    assert.equal(responses[0].result.structuredContent.deduplicated, false);
+    assert.equal(responses[1].result.structuredContent.deduplicated, true);
+    assert.equal(
+      responses[0].result.structuredContent.entryId,
+      responses[1].result.structuredContent.entryId,
+    );
+  });
 });
 
 describe("mcp-server: review_brag_sheet", () => {
+  it("paginates resumed sessions by recent activity rather than original start time", async () => {
+    const isolated = join(dataDir, "resumed-pagination");
+    writeRecord(isolated, {
+      id: "resumed-first", type: "session",
+      timestamp: new Date(Date.now() - 90 * 86400000).toISOString(),
+      capture: { lastEventAt: new Date().toISOString() },
+      summary: "Recent activity",
+    });
+    writeRecord(isolated, {
+      id: "entry-second", type: "entry",
+      timestamp: new Date(Date.now() - 86400000).toISOString(),
+      summary: "Yesterday",
+    });
+    const { responses } = await runRpc([{
+      jsonrpc: "2.0", id: 1, method: "tools/call",
+      params: { name: "review_brag_sheet", arguments: { weeks: 4, limit: 1 } },
+    }], { WORK_TRACKER_DIR: isolated });
+    const result = responses[0].result.structuredContent;
+    assert.equal(result.total, 2);
+    assert.equal(result.items[0].id, "resumed-first");
+    assert.equal(result.hasMore, true);
+  });
+
   it("returns a paginated envelope with markdown and structured items", async () => {
     // Seed via save_to_brag_sheet, then review.
     const { responses } = await runRpc([

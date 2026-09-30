@@ -1,0 +1,14 @@
+export async function joinSession(options) {
+  if (globalThis.mockHost) throw new Error("joinSession called twice");
+  const listeners = new Map();
+  const logs = [];
+  const session = {
+    async log(text, options) { logs.push({ text, options }); },
+    on(name, handler) {
+      if (listeners.has(name)) throw new Error(`Duplicate listener: ${name}`);
+      listeners.set(name, handler);
+    },
+  };
+  globalThis.mockHost = { ...options, listeners, logs };
+  return session;
+}

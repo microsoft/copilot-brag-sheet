@@ -14,6 +14,7 @@ import {
   PR_TOOLS,
   SHELL_TOOLS,
   extractFilePath,
+  extractFileChanges,
   extractPrInfo,
   detectShellGitAction,
   isBragRequest,
@@ -65,6 +66,39 @@ describe("heuristics extractFilePath", () => {
   it("returns null for null/undefined args", () => {
     assert.equal(extractFilePath(null), null);
     assert.equal(extractFilePath(undefined), null);
+  });
+});
+
+describe("heuristics extractFileChanges", () => {
+  it("extracts every file from an apply_patch payload", () => {
+    const patch = [
+      "*** Begin Patch",
+      "*** Add File: src/new.mjs",
+      "+export const value = 1;",
+      "*** Update File: src/existing.mjs",
+      "*** Move to: src/renamed.mjs",
+      "@@",
+      "-old",
+      "+new",
+      "*** Delete File: src/obsolete.mjs",
+      "*** End Patch",
+    ].join("\n");
+
+    assert.deepEqual(extractFileChanges("apply_patch", patch), {
+      filesCreated: ["src/new.mjs"],
+      filesEdited: ["src/existing.mjs", "src/obsolete.mjs", "src/renamed.mjs"],
+    });
+  });
+
+  it("accepts common path field variants", () => {
+    assert.deepEqual(extractFileChanges("edit", { file_path: "/repo/a.mjs" }), {
+      filesCreated: [],
+      filesEdited: ["/repo/a.mjs"],
+    });
+    assert.deepEqual(extractFileChanges("create", { filePath: "/repo/b.mjs" }), {
+      filesCreated: ["/repo/b.mjs"],
+      filesEdited: [],
+    });
   });
 });
 
@@ -208,8 +242,21 @@ describe("heuristics classifyToolUse", () => {
       toolArgs: { path: "/repo/src/main.ts" },
       toolResult: {},
     });
+
     assert.deepEqual(result.filesEdited, ["/repo/src/main.ts"]);
     assert.deepEqual(result.filesCreated, []);
+  });
+
+  it("classifies namespaced apply_patch calls", () => {
+    const result = classifyToolUse({
+      toolName: "functions.apply_patch",
+      toolArgs: {
+        patch: "*** Begin Patch\n*** Update File: src/main.mjs\n@@\n-old\n+new\n*** End Patch",
+      },
+      toolResult: { resultType: "success", textResultForLlm: "Done" },
+    });
+
+    assert.deepEqual(result.filesEdited, ["src/main.mjs"]);
   });
 
   it("classifies PR creation", () => {
@@ -218,10 +265,38 @@ describe("heuristics classifyToolUse", () => {
       toolArgs: { title: "fix: bug", owner: "org", repo: "api" },
       toolResult: { resultType: "success", textResultForLlm: '{"number": 7}' },
     });
+
     assert.equal(result.prsCreated.length, 1);
     assert.equal(result.prsCreated[0].id, 7);
     assert.equal(result.prsCreated[0].title, "fix: bug");
     assert.ok(result.significantActions.includes("pr created"));
+  });
+
+  it("classifies a flattened namespaced PR creation tool", () => {
+    const result = classifyToolUse({
+      toolName: "github-mcp-server-create_pull_request",
+      toolArgs: { title: "fix: bug", owner: "org", repo: "api" },
+      toolResult: { resultType: "success", textResultForLlm: '{"number": 8}' },
+    });
+
+    assert.equal(result.prsCreated[0].id, 8);
+    assert.ok(result.significantActions.includes("pr created"));
+  });
+
+  it("does not count failed file or shell actions as completed work", () => {
+    const fileResult = classifyToolUse({
+      toolName: "edit",
+      toolArgs: { path: "/repo/src/main.ts" },
+      toolResult: { resultType: "failure" },
+    });
+    const shellResult = classifyToolUse({
+      toolName: "bash",
+      toolArgs: { command: "git push origin main" },
+      toolResult: { resultType: "failure" },
+    });
+
+    assert.deepEqual(fileResult.filesEdited, []);
+    assert.deepEqual(shellResult.significantActions, []);
   });
 
   it("classifies github-push_files as git push action", () => {

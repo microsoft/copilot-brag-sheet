@@ -6,6 +6,13 @@
 > **Scope:** Full (tools + hooks — full extension parity)  
 > **Distribution:** Agency first (internal MSFT), then public Claude Code plugin
 
+> **September 2026 update:** This design predates
+> [Agent Plugins 1.0](https://docs.github.com/en/copilot/concepts/agents/about-plugins).
+> Portable skills and MCP configuration should use the standard plugin layout;
+> Copilot-specific hooks belong under `com.github.copilot/`. The
+> `joinSession()` extension remains an experimental, interactive-CLI-specific
+> adapter. Refresh the packaging plan before implementing Phase 2.
+
 ## Phase Status
 
 | Component | Status | Notes |

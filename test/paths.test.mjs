@@ -7,7 +7,8 @@ import {
   detectBragSheetPath,
   detectDataDir,
   detectGitConfig,
-  ensureDir
+  ensureDir,
+  resolveHookWorkingDirectory
 } from "../lib/paths.mjs";
 
 function withEnv(overrides, fn) {
@@ -199,4 +200,21 @@ test("ensureDir creates directories recursively", () => {
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
+});
+
+test("resolveHookWorkingDirectory prefers the current SDK field", () => {
+  assert.equal(
+    resolveHookWorkingDirectory({
+      workingDirectory: "C:\\current",
+      cwd: "C:\\legacy",
+    }),
+    resolve("C:\\current"),
+  );
+});
+
+test("resolveHookWorkingDirectory supports legacy cwd payloads", () => {
+  assert.equal(
+    resolveHookWorkingDirectory({ cwd: "C:\\legacy" }),
+    resolve("C:\\legacy"),
+  );
 });

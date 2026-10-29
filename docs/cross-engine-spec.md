@@ -18,7 +18,7 @@
 | Component | Status | Notes |
 |-----------|--------|-------|
 | MCP server (`mcp-server.mjs`) | ✅ Shipped v1.1.0 | 3 tools over stdio, `@modelcontextprotocol/sdk` + `zod` |
-| Agency manifests (`agency.json`, `.mcp.json`) | ✅ Shipped | Layer 4, developer-tools category |
+| Legacy integration metadata (`agency.json`) | Existing | Standalone MCP configuration is now opt-in through `mcp-config.example.json`; conventional auto-discovery is not enabled. |
 | PostToolUse hook (classification) | ✅ Shipped | Classifies tool calls, returns `{ continue, classification }` to host |
 | PostToolUse hook (persistence) | ⚠️ Phase 2 | Classification data is returned to host but not accumulated on disk |
 | SessionStart / SessionEnd hooks | ⚠️ Phase 2 | Needed for file-based session record lifecycle |
@@ -167,7 +167,7 @@ All 6 lib modules stay pure Node.js with no runtime dependencies (only the MCP s
 
 ### 3. Plugin Manifest (`.claude-plugin/plugin.json`)
 - Declares: skills, hooks, MCP server
-- References: `skills/brag-sheet/SKILL.md`, `hooks/hooks.json`, MCP config
+- References: `skills/brag-sheet/SKILL.md`, `hooks/classification.json`, MCP config
 
 ### 4. Package.json Updates
 - Add `"mcp-server"` to `bin` field for npx distribution

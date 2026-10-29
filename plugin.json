@@ -12,5 +12,8 @@
   "homepage": "https://github.com/microsoft/copilot-brag-sheet",
   "repository": "https://github.com/microsoft/copilot-brag-sheet",
   "license": "MIT",
+  "extensions": ["./extensions"],
+  "mcpServers": {},
+  "hooks": {},
   "keywords": ["copilot-cli", "work-tracker", "brag-sheet", "impact-log", "developer-productivity", "local-first"]
 }

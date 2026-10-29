@@ -50,6 +50,7 @@
   },
   "files": [
     "extension.mjs",
+    "extensions/",
     "mcp-server.mjs",
     "lib/",
     "bin/",
@@ -58,7 +59,7 @@
     "evals/",
     ".claude-plugin/",
     "agency.json",
-    ".mcp.json",
+    "mcp-config.example.json",
     "plugin.json",
     "package.json",
     "README.md",

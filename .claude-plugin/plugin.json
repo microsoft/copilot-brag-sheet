@@ -16,7 +16,7 @@
     "performance-review",
     "local-first"
   ],
-  "hooks": "hooks/hooks.json",
+  "hooks": "hooks/classification.json",
   "skills": [
     "./skills/brag-sheet/SKILL.md"
   ],

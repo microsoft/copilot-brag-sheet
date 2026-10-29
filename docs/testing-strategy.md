@@ -49,14 +49,14 @@ No test framework dependency — we use `node:test` and
 | [`lib/render.mjs`](../lib/render.mjs) | `test/render.test.mjs` | 17 | Markdown rendering, UTC weeks, latest-activity grouping, categories, escaping, fallback, and capture health. | Internationalized week boundaries and locale-specific month names. |
 | [`lib/git-backup.mjs`](../lib/git-backup.mjs) | `test/git-backup.test.mjs` | 19 | `ensureGitRepo` init + idempotent reuse, `addRemote`, `hasRemote`, `backupToGit` happy path / no-changes / commit-fail / push-fail, error logging via the injectable runner pattern (`createGitRunner`). | Real `git` binary execution (we mock). Auth failures on push. Detached HEAD states. Repos with submodules. |
 | [`extension.mjs`](../extension.mjs) | `test/extension.test.mjs` | 32 | Session lifecycle (active/finalized/orphaned/emergency-saved), file tracking (edit/create classification, dedup, `.copilot/session-state` skip, repo-relative normalization), significant-action accumulation, `save_to_brag_sheet` flow, category validation, summary sanitization, repo/branch auto-detection, `review_brag_sheet` rendering, `generate_work_log` write, brag/PR/git smoke tests (importing from `lib/heuristics.mjs`). | Hooks firing inside the SDK runtime (see "What is NOT covered" below). |
-| [`extension.mjs`](../extension.mjs) | `test/extension-adapter.test.mjs` | 22 | Actual hook/tool wiring, cross-process resume, delegated lifecycle, cross-repository paths, concurrent hooks, shutdown/disconnect/exit, and orphan recovery. | Real host event delivery; POSIX signal scenarios are skipped on Windows. |
+| [`extension.mjs`](../extension.mjs) | `test/extension-adapter.test.mjs` | 23 | Actual hook/tool wiring, nested plugin entry-point save/review/generate flow, cross-process resume, delegated lifecycle, cross-repository paths, concurrent hooks, shutdown/disconnect/exit, and orphan recovery. | Real host event delivery; POSIX signal scenarios are skipped on Windows. |
 | [`mcp-server.mjs`](../mcp-server.mjs) | `test/mcp-server.test.mjs` | 20 | Stdio protocol, Zod validation, activity-ordered pagination, structured output, format switching, and explicit-key idempotency. | Real external MCP hosts. |
 | [`hooks/post-tool-use.mjs`](../hooks/post-tool-use.mjs) | `test/hooks.test.mjs` | 7 | Subprocess stdin/stdout classification (file edit, apply_patch, PR creation, unrecognized tool), malformed-input graceful fallback, stdout purity, camelCase payload compatibility. | Hook execution inside a real host. Phase 2 persistence paths. |
 | [`bin/setup.mjs`](../bin/setup.mjs) | — | 0 | — | Interactive prompts. Non-TTY exit (covered indirectly by CI matrix). |
 | [`bin/install.mjs`](../bin/install.mjs) | install-smoke (CI) | 0 unit | Tarball → `~/.copilot/extensions/...` layout. Re-run idempotency. | Failure path when `COPILOT_HOME` exists but isn't writable. |
 | [`install.sh`](../install.sh) / [`install.ps1`](../install.ps1) | install-smoke (CI) | — | End-to-end install on Linux/macOS, Windows PS 5.1, Windows pwsh 7+ (matches real-world Windows 10/11 default shell). | Air-gapped installs. Behind-corporate-proxy installs. |
 
-**Total: 233 tests + 4 install-smoke jobs (3 OS × shells).**
+**Total: 234 tests + 4 install-smoke jobs (3 OS × shells).**
 Two POSIX signal scenarios are skipped on Windows.
 
 ---
@@ -93,6 +93,14 @@ or use private tracker data.
 
 This verifies adapter wiring, not host delivery guarantees. Live-host smoke
 tests remain necessary when the experimental CLI extension API changes.
+
+An isolated Windows check with Copilot CLI 1.0.105-0 installed the plugin from
+a local marketplace and exercised `apply_patch`, `save_to_brag_sheet`, and
+`generate_work_log` against synthetic records. With `--experimental`, prompt
+mode loaded the native extension. The local marketplace is a live directory,
+not a downloaded GitHub artifact; remote installation must be checked after the
+candidate is available on GitHub. This does not establish compatibility for every
+CLI version or guarantee graceful shutdown.
 
 An isolated Windows smoke test with Copilot CLI 1.0.88 verified interactive
 extension loading, `apply_patch` capture, resume into one record, accumulated

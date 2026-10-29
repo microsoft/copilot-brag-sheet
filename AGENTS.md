@@ -216,7 +216,7 @@ real bug reports). Don't change them without an issue and discussion first.
 
 ## 5. Testing strategy
 
-Current state: **233 tests**, run cross-platform in CI. Two POSIX signal
+Current state: **234 tests**, run cross-platform in CI. Two POSIX signal
 scenarios are skipped on Windows, where those signals force termination.
 Counts include the parameterized adapter scenarios:
 
@@ -224,7 +224,7 @@ Counts include the parameterized adapter scenarios:
 |---|---:|---|
 | `test/heuristics.test.mjs` | 39 | Tool classification sets, apply_patch/path extraction, namespaced tools, failure exclusion, extractPrInfo, git actions, isBragRequest, classifyToolUse. |
 | `test/extension.test.mjs` | 32 | Session record lifecycle, file tracking, significant actions, manual entry creation, review/generate flow, brag/PR/git smoke tests (importing from lib/heuristics.mjs). |
-| `test/extension-adapter.test.mjs` | 22 | Actual adapter wiring in isolated subprocesses: resume, subagents, concurrent hooks, cross-repository paths, exit/disconnect recovery, and tools. |
+| `test/extension-adapter.test.mjs` | 23 | Actual adapter wiring in isolated subprocesses: resume, subagents, concurrent hooks, cross-repository paths, exit/disconnect recovery, and tools through both root and nested plugin entry points. |
 | `test/git-backup.test.mjs` | 19 | `ensureGitRepo`, `addRemote`, `backupToGit` with a mocked `git` runner. |
 | `test/mcp-server.test.mjs` | 20 | MCP protocol, validation, activity-ordered pagination, structured output, idempotent retries. |
 | `test/operations.test.mjs` | 19 | Shared save/review/generate, concurrent retries, resumed-session lookback, and real disk I/O. |
@@ -236,7 +236,7 @@ Counts include the parameterized adapter scenarios:
 | `test/lock.test.mjs` | 7 | Lock acquisition, stale-PID cleanup, contention. |
 | `test/hooks.test.mjs` | 7 | PostToolUse hook subprocess tests: classification including apply_patch, malformed input, stdout purity, camelCase compat. |
 | `test/pack-smoke.test.mjs` | 1 | Tarball validation, install simulation. |
-| **Total** | **233** | |
+| **Total** | **234** | |
 
 **What's covered:**
 
@@ -366,7 +366,7 @@ Until then, the `_npmUser` is whoever holds the `NPM_TOKEN`, not
 | **awesome-copilot skill** | ✅ live | [`SKILL.md`](skills/brag-sheet/SKILL.md) is mirrored in [github/awesome-copilot](https://github.com/github/awesome-copilot) (PR #1428). The skill is the prompt; this repo is the prompt **plus** the deterministic capture. |
 | **Claude Code plugin** | ✅ partial (tools: v1.1; auto-tracking: Phase 2) | Tracked in [`docs/cross-engine-spec.md`](docs/cross-engine-spec.md). MCP tools work fully; auto-tracking hooks are classification-only (persistence in Phase 2). |
 | **MCP server** | ✅ live | `mcp-server.mjs` exposes all three tools to any MCP-compatible host (Cursor, VS Code, Codex, Copilot CLI) via `copilot-brag-sheet-mcp` bin. |
-| **`copilot plugin install`** | 🚫 blocked upstream | This is a `joinSession()` extension, not an MCP plugin — needs [github/copilot-cli#3023](https://github.com/github/copilot-cli/issues/3023). Don't try to register it under `~/.copilot/plugins/`. |
+| **Copilot plugin marketplace** | Supported by current CLI | `.github/plugin/marketplace.json` installs the root plugin. `extensions/copilot-brag-sheet/extension.mjs` imports the existing adapter; launch with `--experimental`. Keep the root manifest's empty `mcpServers` and `hooks` maps to suppress fallback discovery. Do not restore conventional `.mcp.json` or `hooks/hooks.json`: they auto-start redundant components alongside the native adapter. |
 
 Don't add new distribution channels (e.g. Homebrew, scoop, winget)
 without first checking the [ROADMAP](ROADMAP.md) — the priority is
@@ -379,6 +379,8 @@ proving distribution conversion before fanning out further.
 | Path | Purpose | Modify when... |
 |---|---|---|
 | `extension.mjs` | Copilot CLI entry point: hooks + tools. **Only file that imports the SDK.** Delegates to `lib/*` for all logic. | Adding a hook or tool. Wiring new lib functionality into the host. |
+| `extensions/copilot-brag-sheet/extension.mjs` | Plugin discovery shim; imports the root adapter without copying its logic. | Changing Copilot plugin packaging. |
+| `.github/plugin/marketplace.json` | GitHub-backed plugin catalog. | Changing plugin distribution. |
 | `lib/paths.mjs` | OS-native data dir; env-var overrides. | Adding a new path target or platform. |
 | `lib/config.mjs` | Default config + presets + category management. | Adding a preset or default category. |
 | `lib/heuristics.mjs` | Tool classification sets, extraction helpers, brag keyword detection, composite `classifyToolUse`. | Adding a new tool type to track, changing brag-trigger behavior. |
@@ -390,8 +392,8 @@ proving distribution conversion before fanning out further.
 | `lib/git-backup.mjs` | Optional git init/commit/push of data dir. | Adding remote types, fixing git edge cases. |
 | `mcp-server.mjs` | MCP stdio server (3 tools). Only file that imports `@modelcontextprotocol/sdk` + `zod`. | Adding an MCP tool or changing protocol behavior. |
 | `agency.json` | Agency governance manifest (layer 4, developer-tools). **No `version` field** — `package.json` is source of truth. | Changing Agency category, engines, or governance metadata. |
-| `.mcp.json` | Standalone MCP server config for Agency hosts. | Changing MCP server args or transport. |
-| `hooks/hooks.json` | Agency hook declarations (PostToolUse). | Adding a hook event (e.g. SessionStart, SessionEnd for Phase 2). |
+| `mcp-config.example.json` | Opt-in standalone MCP configuration example; requires an absolute local path. | Changing MCP server args or transport. |
+| `hooks/classification.json` | Classifier hook declaration, explicitly referenced by the Claude manifest. | Changing the optional command-hook integration. |
 | `hooks/post-tool-use.mjs` | Agency PostToolUse hook. Classifies tool calls via `lib/heuristics.mjs`. **Phase 1: classification only.** | Changing classification behavior or adding persistence (Phase 2). |
 | `bin/install.mjs` | Post-`npm-i` wizard launcher. Copies pkg → `~/.copilot/extensions/`. | Changing the install layout or required-files list. |
 | `bin/setup.mjs` | Interactive setup wizard. Non-TTY-safe. | Adding a config field, preset, or onboarding step. |

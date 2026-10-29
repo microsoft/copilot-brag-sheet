@@ -61,13 +61,14 @@ jobs:
             extension.mjs
             mcp-server.mjs
             agency.json
-            .mcp.json
+            mcp-config.example.json
             plugin.json
             package.json
             bin/install.mjs
             bin/setup.mjs
             bin/mcp-server.mjs
-            hooks/hooks.json
+            hooks/classification.json
+            extensions/copilot-brag-sheet/extension.mjs
             hooks/post-tool-use.mjs
             lib/config.mjs
             lib/git-backup.mjs

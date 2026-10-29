@@ -9,10 +9,10 @@
 
 ## TL;DR
 
-`copilot-brag-sheet` is a **local-first, zero-telemetry, zero-network**
-extension. The only data that ever leaves the user's machine is the
-optional `git push` they explicitly opt into during setup, to a remote
-they themselves chose. Records on disk are written atomically; concurrent
+`copilot-brag-sheet` is a **local-first, zero-telemetry** extension with no
+outbound HTTP client. Its optional git backup can send records to a remote
+the user explicitly chooses; tool results also return records to the AI host.
+Records on disk are written atomically; concurrent
 writers are serialized via PID-aware file locks; LLM output is sanitized
 before persistence.
 
@@ -21,6 +21,18 @@ secret leakage from prompts/LLM output (redaction is on the roadmap),
 filesystem snooping by other local users on the same machine, and
 malicious co-resident extensions inside the Copilot CLI process. We
 inherit the host's trust model.
+
+**Local storage is not offline model processing.** Calling the review or
+generation tools returns content to the current AI host. Use a host and account
+approved for that information. Keep sensitive work out of personal backup
+remotes and use synthetic records for demos.
+
+**Plugin installation and updates download code from GitHub.** This is separate
+from record storage: the extension does not upload records during an update.
+The Copilot plugin uses its native extension tools without auto-starting a
+duplicate MCP server. Trust the source before approving extension hooks, enable
+experimental features explicitly, and do not load a legacy installation alongside
+the plugin.
 
 ---
 

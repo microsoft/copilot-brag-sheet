@@ -40,9 +40,10 @@ See [`docs/cross-engine-spec.md`](docs/cross-engine-spec.md).
 - [x] **Git backup** — opt-in auto-commit of work log to a git repo
 - [x] **Git remote sync** — connect data dir git repo to a remote (GitHub/ADO) for cross-machine sync
 
-### Blocked on upstream
+### Plugin distribution
 
-- [ ] **`copilot plugin install` support for `joinSession()` extensions** — tracking [github/copilot-cli#3023](https://github.com/github/copilot-cli/issues/3023) (in-repo: [#23](https://github.com/microsoft/copilot-brag-sheet/issues/23)). When fixed, distribution becomes one line. Mitigation in flight: cross-engine MCP + hooks.
+- [x] **Copilot plugin distribution** — current CLI supports plugin extensions. A GitHub-backed marketplace installs the native adapter without npm publication. Experimental features and hook approval remain required.
+- [x] **Verify remote rollout** — isolated Windows checks installed the candidate from its GitHub branch, updated to a newer commit, and verified saved records were unchanged. Default-branch availability follows merge.
 
 ## Priority 2 — Polish (after distribution proven)
 

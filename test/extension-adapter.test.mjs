@@ -22,6 +22,7 @@ const scenarios = [
   "shutdown",
   "compaction",
   "tools",
+  "plugin-tools",
   "concurrent-hooks",
   "shutdown-during-hooks",
   "process-exit",
@@ -51,6 +52,9 @@ for (const scenario of scenarios) {
       cpSync(path.join(root, "extension.mjs"), path.join(scratch, "extension.mjs"));
       cpSync(path.join(root, "package.json"), path.join(scratch, "package.json"));
       cpSync(path.join(root, "lib"), path.join(scratch, "lib"), { recursive: true });
+      if (scenario === "plugin-tools") {
+        cpSync(path.join(root, "extensions"), path.join(scratch, "extensions"), { recursive: true });
+      }
       cpSync(path.join(root, "test", "fixtures", "extension-host.fixture"),
         path.join(scratch, "host.mjs"));
       cpSync(path.join(root, "test", "fixtures", "copilot-sdk.fixture"),

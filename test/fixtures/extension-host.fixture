@@ -12,7 +12,9 @@ if (!existsSync(path.join(workspace, ".git"))) {
   execFileSync("git", ["remote", "add", "origin", "https://example.invalid/owner/adapter.git"],
     { cwd: workspace, stdio: "pipe" });
 }
-await import("./extension.mjs");
+await import(process.argv[2] === "plugin-tools"
+  ? "./extensions/copilot-brag-sheet/extension.mjs"
+  : "./extension.mjs");
 const host = globalThis.mockHost;
 assert.ok(host);
 assert.deepEqual(Object.keys(host.hooks).sort(), [
@@ -355,9 +357,12 @@ switch (process.argv[2]) {
     assert.deepEqual(record().filesEdited, ["before.mjs", "after.mjs"]);
     break;
   }
+  case "plugin-tools":
   case "tools": {
     await start();
-    const args = { summary: "Improved capture", category: "tooling", idempotencyKey: "work-123" };
+    await edit("demo-evidence.mjs");
+    const impact = "Synthetic startup benchmark: 10 minutes to 6 minutes; evidence: demo-evidence.mjs";
+    const args = { summary: "Improved capture", category: "tooling", impact, idempotencyKey: "work-123" };
     const responses = await Promise.all([
       tool("save_to_brag_sheet", args), tool("save_to_brag_sheet", args),
     ]);
@@ -366,11 +371,14 @@ switch (process.argv[2]) {
     assert.equal(entries.length, 1);
     assert.equal(entries[0].sessionId, parentId);
     assert.equal(entries[0].repo, "adapter");
+    assert.equal(entries[0].impact, impact);
+    assert.deepEqual(record().filesEdited, ["demo-evidence.mjs"]);
     const invalid = await tool("save_to_brag_sheet", { summary: "" });
     assert.equal(invalid.resultType, "failure");
     assert.match(await tool("review_brag_sheet", {}), /Improved capture/);
     assert.match(await tool("generate_work_log", {}), /Work log generated/);
     assert.match(readFileSync(path.join(dataDir, "work-log.md"), "utf8"), /Improved capture/);
+    assert.ok(readFileSync(path.join(dataDir, "work-log.md"), "utf8").includes(impact));
     break;
   }
   case "concurrent-hooks": {

@@ -97,9 +97,10 @@ tests remain necessary when the experimental CLI extension API changes.
 An isolated Windows check with Copilot CLI 1.0.105-0 installed the plugin from
 a local marketplace and exercised `apply_patch`, `save_to_brag_sheet`, and
 `generate_work_log` against synthetic records. With `--experimental`, prompt
-mode loaded the native extension. The local marketplace is a live directory,
-not a downloaded GitHub artifact; remote installation must be checked after the
-candidate is available on GitHub. This does not establish compatibility for every
+mode loaded the native extension. A subsequent isolated Windows check installed
+the candidate from its GitHub branch marketplace, without a local plugin mount.
+The downloaded plugin captured a file edit, saved the supplied synthetic impact,
+and generated the work log. These checks do not establish compatibility for every
 CLI version or guarantee graceful shutdown.
 
 An isolated Windows smoke test with Copilot CLI 1.0.88 verified interactive

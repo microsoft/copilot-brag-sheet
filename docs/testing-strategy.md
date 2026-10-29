@@ -100,7 +100,10 @@ a local marketplace and exercised `apply_patch`, `save_to_brag_sheet`, and
 mode loaded the native extension. A subsequent isolated Windows check installed
 the candidate from its GitHub branch marketplace, without a local plugin mount.
 The downloaded plugin captured a file edit, saved the supplied synthetic impact,
-and generated the work log. These checks do not establish compatibility for every
+and generated the work log. A marketplace refresh and plugin update retrieved a
+newer commit while all saved-data file hashes remained unchanged; the updated
+plugin also completed an interactive capture/save/generate session without a
+duplicate MCP startup failure. These checks do not establish compatibility for every
 CLI version or guarantee graceful shutdown.
 
 An isolated Windows smoke test with Copilot CLI 1.0.88 verified interactive

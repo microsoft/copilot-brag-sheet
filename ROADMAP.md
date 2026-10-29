@@ -43,7 +43,7 @@ See [`docs/cross-engine-spec.md`](docs/cross-engine-spec.md).
 ### Plugin distribution
 
 - [x] **Copilot plugin distribution** — current CLI supports plugin extensions. A GitHub-backed marketplace installs the native adapter without npm publication. Experimental features and hook approval remain required.
-- [ ] **Verify remote rollout** — after the candidate is available on GitHub, check a clean marketplace install and downloaded-plugin update. Local marketplace checks load the checkout live.
+- [x] **Verify remote rollout** — isolated Windows checks installed the candidate from its GitHub branch, updated to a newer commit, and verified saved records were unchanged. Default-branch availability follows merge.
 
 ## Priority 2 — Polish (after distribution proven)
 

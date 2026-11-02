@@ -30,7 +30,7 @@ If you've seen the brag-sheet skill listed elsewhere — that's our [SKILL.md](s
 | LLM runs shell commands by hand | Direct file/PR/git tracking via Node API |
 | LLM formats markdown each time | Deterministic, typed, crash-safe |
 | Markdown stored "somewhere" | Structured local JSON, atomic writes, orphan recovery |
-| Re-curl to update | `npm update` or one-line re-install |
+| Re-curl to update | Plugin-manager update or one-line re-install |
 
 **Want just the prompt?** Use the skill — also published in [github/awesome-copilot](https://github.com/github/awesome-copilot).
 **Want it to actually happen automatically?** Install the extension below.
@@ -62,9 +62,9 @@ Plus three tools the agent can call on your behalf:
 
 **MCP / Agency users:** The three tools (`save_to_brag_sheet`, `review_brag_sheet`, `generate_work_log`) work fully. Automatic session tracking (files edited, PRs created, git actions) requires the Copilot CLI `joinSession()` runtime and is not yet available in other hosts. For now, say `"brag — <accomplishment>"` to capture work manually.
 
-**Copilot CLI users:** Automatic tracking requires the interactive CLI to load
-the extension and approve its hooks. The underlying `joinSession()` API is
-experimental; prompt-only (`-p`) runs may not load JavaScript extensions.
+**Copilot CLI users:** Automatic tracking requires experimental features to be
+enabled and the extension's hooks to be approved. The underlying `joinSession()`
+API is experimental; support can vary by CLI version and launch mode.
 Check that session records and capture counters appear before relying on a
 work log as complete. MCP tools remain available for explicit saves.
 
@@ -78,9 +78,29 @@ You don't need to memorize the list — just talk naturally about your work and 
 
 ## Install (60 seconds)
 
-> ⚠️ **Don't use `copilot plugin install`.** This is a [`joinSession()`](https://docs.github.com/en/copilot/customizing-copilot/extending-copilot-with-mcp-and-extensions) extension and must live in `~/.copilot/extensions/`. Tracking [github/copilot-cli#3023](https://github.com/github/copilot-cli/issues/3023). Use one of the methods below.
+Use a current Copilot CLI with
+[plugin extension support](https://docs.github.com/en/copilot/tutorials/create-an-extension).
+The plugin uses the SDK supplied by the CLI: no npm install or hosted service is
+needed for automatic capture.
 
-### Recommended: one-liner
+### Recommended: GitHub-backed plugin
+
+```shell
+copilot plugin marketplace add microsoft/copilot-brag-sheet
+copilot plugin install copilot-brag-sheet@brag-sheet
+copilot --experimental
+```
+
+Approve the extension's hooks when prompted. In the session, open
+`/extensions manage` and confirm `copilot-brag-sheet` is running.
+
+**Upgrading from the old installer?** First close your CLI sessions and move
+`copilot-brag-sheet` out of your Copilot home's `extensions` directory. Keep
+that copy as a fallback, but do not load both installations at once. Your
+records live in a separate app-data directory; leave them in place.
+`COPILOT_HOME`, when set, selects the CLI profile to install into.
+
+### Alternative: one-liner
 
 ```bash
 # macOS / Linux
@@ -110,15 +130,46 @@ cd copilot-brag-sheet
 
 ### Activate
 
-After install, run `/clear` (or restart Copilot CLI). On your first message you'll see:
+After install, start `copilot --experimental`. Approve its hooks when prompted.
+On your first message you'll see:
 
 ```
 📊 Work logger active
 ```
 
-Re-run setup anytime with `copilot-brag-sheet-setup` (after npm install) or `node ~/.copilot/extensions/copilot-brag-sheet/bin/setup.mjs`.
+The plugin works with default settings without running setup. To customize it,
+edit `config.json` in your [data directory](#configuration).
+For legacy installs, re-run setup with `copilot-brag-sheet-setup` (npm) or
+`node ~/.copilot/extensions/copilot-brag-sheet/bin/setup.mjs` (install script).
 
 > Install failing? [Open an issue](https://github.com/microsoft/copilot-brag-sheet/issues/new) with the error — Windows + macOS + Linux are CI-tested.
+
+### Update or remove
+
+```shell
+copilot plugin marketplace update brag-sheet
+copilot plugin update copilot-brag-sheet@brag-sheet
+```
+
+Start a new CLI session after updating. To remove the plugin, use
+`copilot plugin uninstall copilot-brag-sheet@brag-sheet`. Updating or uninstalling the
+plugin does not remove the separate work-history directory.
+
+For a local checkout, register that directory as the marketplace instead:
+`copilot plugin marketplace add .`. Local marketplace plugins load directly from
+the checkout; edits take effect in a new session without an update command.
+
+### Verify before relying on it
+
+In a disposable project, ask Copilot to create a small file, then ask:
+
+> Read the current session's JSON record in the work logger's data directory.
+> Show filesCreated, filesEdited, and the capture counters. Confirm the file just
+> created is recorded. If no session evidence is available, say so.
+
+The active banner confirms startup, not complete capture. Check the actual
+session evidence. See the [quickstart and demo](docs/quickstart.md) for a
+five-minute walkthrough from captured work to a review draft.
 
 ## Use
 
@@ -530,13 +581,23 @@ Override with `WORK_TRACKER_DIR` environment variable.
 <details>
 <summary><strong>Why don't I see "Work logger active"?</strong></summary>
 
-The message appears on your **first message** after starting Copilot CLI (not immediately on `/clear`). Type anything and it should appear. If it doesn't, check that the extension is installed at `~/.copilot/extensions/copilot-brag-sheet/extension.mjs`.
+The message appears on your **first message** after starting Copilot CLI.
+Start with `copilot --experimental` and approve the extension's hooks.
+For a plugin install, check `copilot plugin list` and `/extensions manage`.
+For a legacy install, check your Copilot home's
+`extensions/copilot-brag-sheet/extension.mjs`. Use only one installation.
+Then [verify the saved session evidence](#verify-before-relying-on-it);
+the banner alone does not prove complete capture.
 </details>
 
 <details>
 <summary><strong>Can I use copilot plugin install?</strong></summary>
 
-No. `copilot plugin install` only loads declarative plugins (skills, agents, MCP). This extension uses `joinSession()` which requires files in `~/.copilot/extensions/`. Use the install scripts instead.
+Yes. A current Copilot CLI supports the native extension through the
+[GitHub-backed marketplace](#recommended-github-backed-plugin).
+Start with `--experimental` and approve its hooks. If migrating from the
+legacy installer, move the old extension out of your Copilot home first;
+keep your work-history directory intact.
 </details>
 
 <details>

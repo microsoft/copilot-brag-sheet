@@ -4,8 +4,8 @@ description: >
   Turns vague "what did I do?" into evidence-backed impact statements for performance
   reviews, self-reviews, promotion packets, and weekly updates. Uniquely mines Copilot
   CLI session logs to reconstruct forgotten work, plus git commits and GitHub PRs.
-  Enforces a 3-part impact contract (action → result → evidence). Works standalone
-  with one runtime dependency: the official MCP SDK (when running the MCP server).
+  Enforces a 3-part impact contract (action → result → evidence). Prefer installed
+  brag-sheet tools for saved records; historical source scans require user scope.
   Use this skill whenever the user asks to document, summarize, reconstruct, or
   organize their engineering work — even if they don't literally say "brag sheet".
   Trigger phrases include: "brag", "log work", "what did I do", "backfill my work
@@ -32,7 +32,8 @@ DO NOT USE FOR: project management, sprint planning, time tracking, ticket creat
 | User wants... | Mode | Output |
 |---------------|------|--------|
 | Log one accomplishment | **Capture** | 1 impact-first entry |
-| "What did I do last week?" | **Backfill** | Entries grouped by week, mined from git/PRs/sessions |
+| "What did I do last week?" | **Review saved work** | Saved entries and session evidence for the agreed period |
+| Explicitly recover missing history | **Backfill** | Draft entries mined from approved git/PR/session sources |
 | Prep for review or promo | **Review Pack** | Entries grouped by impact theme + STAR narratives |
 
 ## Agent Behavior Rules
@@ -47,6 +48,9 @@ DO NOT USE FOR: project management, sprint planning, time tracking, ticket creat
 8. **DO NOT** write entries for work the user only described verbally without verifying. Ask: "Did this ship? Is there a PR or doc I can reference?"
 9. **DO NOT** skip the backfill scan steps or draft entries before scanning is complete.
 10. **DO NOT** pad weak periods with trivial entries. An honest gap is better than inflated fluff.
+11. **DO** start with saved records when the review tools are available. A request to review saved work is not permission to scan unrelated repositories, mail, or session transcripts.
+12. **DO** distinguish automatic activity from confirmed outcomes. File edits and commits do not prove deployment, customer benefit, or business impact; label missing outcomes as unverified.
+13. **DO NOT** send records to another service or enable git backup as part of review preparation. Use the user's approved host, flag sensitive content, and obtain permission before sharing a draft.
 
 ## Entry Format
 
@@ -102,23 +106,27 @@ Never invent a metric to fill the gap. Qualitative evidence with context beats f
 
 Follow this decision tree:
 
-1. **If `save_to_brag_sheet` tool is available** → use extension tools directly (`save_to_brag_sheet`, `review_brag_sheet`, `generate_work_log`). Do not reference or attempt to call these tools unless they are confirmed available.
+1. **For saved-work review** → use `review_brag_sheet` when available for the agreed period. If records or tools are unavailable, explain the gap and ask whether to backfill or use a guided interview.
 
-2. **If git or gh CLI is available** → backfill from commits and PRs (see Backfill section below)
+2. **For capture or export** → use `save_to_brag_sheet` or `generate_work_log` only when the corresponding tool is confirmed available and the user requested that action.
 
-3. **Otherwise** → guided interview: "What did you work on?", "Who benefited?", "What's the evidence?"
+3. **For explicitly requested backfill** → agree the date range, repositories, and source types before following the Backfill Workflow. Tool availability alone does not authorize a historical scan.
+
+4. **Otherwise** → guided interview: "What did you work on?", "Who benefited?", "What's the evidence?"
 
 For each entry, walk through: **What** (the deliverable) → **Why** (who benefits) → **Evidence** (PR, metric, link). Output formatted markdown the user can paste into a review doc.
 
 ## Backfill Workflow
 
-When the user asks "what did I do last week" or "backfill my history":
+Use this workflow for explicitly requested backfill after agreeing the date range,
+repositories, and source types. A question such as "what did I do last week"
+starts with saved-work review, not a scan of other history.
 
 **Follow these steps in order. Do not draft entries until scanning is complete.**
 
 ### Step 1: Scan available sources
 
-Check what's available, then mine each source:
+Check and scan only the agreed sources. Skip source types outside that scope:
 ```bash
 git --version 2>/dev/null         # for commit mining
 gh --version 2>/dev/null          # for PR mining

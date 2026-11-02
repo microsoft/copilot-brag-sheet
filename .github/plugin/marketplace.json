@@ -1,0 +1,13 @@
+{
+  "name": "brag-sheet",
+  "owner": {
+    "name": "Microsoft"
+  },
+  "plugins": [
+    {
+      "name": "copilot-brag-sheet",
+      "description": "Capture local work evidence and prepare evidence-backed performance review drafts.",
+      "source": "."
+    }
+  ]
+}

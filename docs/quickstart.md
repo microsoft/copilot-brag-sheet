@@ -1,4 +1,8 @@
-# From work evidence to a review draft
+# Keep work notes you can use later
+
+The extension remembers activity from your CLI sessions. Your notes explain
+what that work achieved. You can review them during the week or use them as
+source material when writing a performance review.
 
 ## Set up once
 
@@ -14,6 +18,8 @@ the plugin or the older extension installer, not both.
 No account, hosted service, or git backup is required by this plugin. Your host
 still requires its own authentication. Records use your OS app-data directory
 unless you explicitly set `WORK_TRACKER_DIR`.
+Use the GitHub marketplace for current code. The npm package remains an older
+v1.2.0 release and does not include the recent fixes on `main`.
 
 ### Ask Copilot to help install
 
@@ -35,27 +41,41 @@ Review tool-permission requests before approving them. Installation is not
 capture verification: restart into the same profile, check `/extensions manage`,
 and run the synthetic demo below.
 
-## Understand what is captured
+## Save a useful note
 
 Automatic capture records activity: files changed, recognized git/PR actions,
 session context, and capture counters. It is a memory aid, not proof that a
 change shipped or improved a business outcome.
 
-For useful review material, add the missing context when you finish meaningful
-work: what changed, who benefited, the observed result, and an evidence link.
-Use the `brag-sheet` skill when preparing a draft. Do not turn every file edit
-into an accomplishment.
+When you finish meaningful work, add what changed, your contribution, the
+observed result, and an evidence link. You can ask:
+
+> Save a note about the change we just finished. Ask me for the outcome and a
+> source link if they are missing. Show me the proposed entry before saving.
+
+A useful note can cover a bug fix, a decision, an investigation, or help you
+gave a teammate. It does not need a percentage improvement. If the result is
+not known yet, say so. See the [example from this project's public work](../README.md#a-real-example).
 
 ## Five-minute demo
 
-Use a disposable project and a separate data directory. In PowerShell:
+This is an optional installation check, not an example of real impact. It
+tests whether capture, saving, and log generation work in your profile.
+Use a disposable project and a separate data directory. In a separate PowerShell
+window using the same Copilot profile:
 
 ```powershell
-$env:WORK_TRACKER_DIR = Join-Path $env:TEMP ("brag-demo-" + [guid]::NewGuid())
+$demo = Join-Path $env:TEMP ("brag-demo-" + [guid]::NewGuid())
+$env:WORK_TRACKER_DIR = Join-Path $demo 'data'
+$env:WORK_TRACKER_OUTPUT_PATH = Join-Path $env:WORK_TRACKER_DIR 'work-log.md'
+$env:WORK_TRACKER_GIT_BACKUP = 'false'
+$env:WORK_TRACKER_GIT_PUSH = 'false'
 New-Item -ItemType Directory -Path $env:WORK_TRACKER_DIR | Out-Null
+New-Item -ItemType Directory -Path (Join-Path $demo 'workspace') | Out-Null
 '{"git":{"enabled":false,"push":false},"output":{"includeSessionLog":true}}' |
   Set-Content -Encoding ascii (Join-Path $env:WORK_TRACKER_DIR 'config.json')
 Write-Output $env:WORK_TRACKER_DIR
+Set-Location (Join-Path $demo 'workspace')
 copilot
 ```
 
@@ -82,13 +102,8 @@ the supplied impact and evidence, and the generated Markdown includes the entry
 and session-activity summary.
 Do not accept a fluent answer as proof that a save succeeded.
 
-After exiting the CLI, remove the demo override:
-
-```powershell
-Remove-Item Env:WORK_TRACKER_DIR
-```
-
-The demo records remain in the printed data location until you remove them.
+After exiting the CLI, close the test shell. This leaves your normal shell's
+data-directory settings unchanged. The demo records remain in the printed location.
 Never delete your normal data directory as demo cleanup.
 
 ## During real work
@@ -102,11 +117,10 @@ automatically; add it manually or request a separately scoped backfill.
 
 Ask:
 
-> Use my saved brag-sheet records for the agreed review period. Group related
-> work into impact themes. Separate my contributions from team outcomes, cite
-> supporting entries or source links, and flag missing evidence. Do not infer
-> business impact from file counts or invent metrics. Show me the draft before
-> saving or sharing anything.
+> Draft a short review from my saved entries for this period. Group related
+> work, cite the sources, and flag anything missing. Keep my contribution
+> separate from team outcomes. Do not invent metrics. Show me the draft before
+> sharing it.
 
 Confirm the date range when prompted. Review the sources, remove sensitive
 details, and edit the draft in your own voice before sharing it.

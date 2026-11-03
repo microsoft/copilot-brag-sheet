@@ -1,56 +1,65 @@
 # Copilot Brag Sheet
 
-> **Turn vague "what did I do?" into evidence-backed impact statements** — automatically, every Copilot CLI session.
+Keep a record of your work so you do not have to reconstruct it at review time.
 
-![demo](demo/demo.gif)
+Copilot Brag Sheet records activity during your
+[GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli)
+sessions. When you finish something worth remembering, add a short note about
+the result and a link to the evidence. Later, ask Copilot to review those notes
+or turn them into a work log.
 
-**🔒 Local-first · 🤝 MCP-conformant · 🚫 Zero telemetry**
-
-A [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) extension that silently records your work as you go — files edited, PRs created, git actions — so when performance review season hits, you have receipts instead of a blank page. ([What's a brag sheet?](https://jvns.ca/blog/brag-documents/))
-
-> 👋 **Microsoft engineer?** Jump to [Connect-optimized framing →](#microsoft-employees-connect--performance-reviews)
+Records stay in local files. The plugin has no telemetry; your AI host still
+processes the content you ask it to review.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/microsoft/copilot-brag-sheet/ci.yml?branch=main&label=CI)](https://github.com/microsoft/copilot-brag-sheet/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/copilot-brag-sheet.svg)](https://www.npmjs.com/package/copilot-brag-sheet)
-[![npm downloads](https://img.shields.io/npm/dm/copilot-brag-sheet.svg)](https://www.npmjs.com/package/copilot-brag-sheet)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Awesome Copilot](https://img.shields.io/badge/Awesome-Copilot-blue?logo=github)](https://github.com/github/awesome-copilot)
 
-🌐 **Landing page:** [microsoft.github.io/copilot-brag-sheet](https://microsoft.github.io/copilot-brag-sheet/) · 🖼️ [Social preview](docs/og-image.png)
+[Install](#install) · [Example](#a-real-example) · [Quickstart](docs/quickstart.md) · [Website](https://microsoft.github.io/copilot-brag-sheet/)
 
 > **Requires:** Node.js 18+, [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) (with active Copilot subscription)
 
-## Why an extension, not just a SKILL.md?
+## What it does
 
-If you've seen the brag-sheet skill listed elsewhere — that's our [SKILL.md](skills/brag-sheet/SKILL.md), the LLM guidance file. It's a *prompt* that tells the agent how to think about your work. This repo ships the prompt **plus** the extension that makes it actually happen:
+- **Records activity while the extension is running:** repository, branch,
+  files changed, recognized PR/git actions, and session context.
+- **Saves accomplishments you choose:** what changed, why it mattered, and
+  the evidence you provide.
+- **Makes those notes easier to reuse:** review recent entries or generate
+  a Markdown work log for a weekly update or performance-review draft.
 
-| Just the SKILL.md | The full extension (this) |
-|---|---|
-| LLM has to remember the trigger | Auto-captures every session |
-| LLM runs shell commands by hand | Direct file/PR/git tracking via Node API |
-| LLM formats markdown each time | Deterministic, typed, crash-safe |
-| Markdown stored "somewhere" | Structured local JSON, atomic writes, orphan recovery |
-| Re-curl to update | Plugin-manager update or one-line re-install |
+It is most useful if you work regularly in Copilot CLI and add a short note
+when a result is fresh. It does not automatically track work in other apps,
+measure business impact, or write your review for you.
 
-**Want just the prompt?** Use the skill — also published in [github/awesome-copilot](https://github.com/github/awesome-copilot).
-**Want it to actually happen automatically?** Install the extension below.
-
-## What It Does
-
-Every time you use [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli), this extension automatically:
-
-- 📊 **Tracks your session** — repo, branch, files edited/created, PRs, git actions
-- 📝 **Captures context** — first prompt as task description, session duration
-- 🔒 **Stores locally** — structured JSON records in your OS app-data directory
-- 🚀 **Crash-safe** — atomic writes, orphan recovery, emergency shutdown saves
-
-Plus three tools the agent can call on your behalf:
+The agent uses three tools:
 
 | Tool | What it does |
 |------|-------------|
 | `save_to_brag_sheet` | Save a work accomplishment to your impact log |
 | `review_brag_sheet` | Review recent entries for performance discussions |
 | `generate_work_log` | Render all records into a Markdown file |
+
+The included [skill](skills/brag-sheet/SKILL.md) guides the conversation.
+The native extension handles capture and storage. The skill alone does not
+provide that background capture.
+
+## A real example
+
+This project's [marketplace installation change (#72)](https://github.com/microsoft/copilot-brag-sheet/pull/72)
+is an example of work worth keeping a note about. The PR added a GitHub install
+path and fixed duplicate component startup.
+
+A concise review note based on that public PR:
+
+> Added GitHub marketplace installation and updates for Copilot Brag Sheet,
+> so users can install the native extension without npm. Fixed duplicate
+> server startup and verified that an update preserved saved records.
+> Evidence: [#72](https://github.com/microsoft/copilot-brag-sheet/pull/72).
+
+That is more useful than "worked on plugin packaging." It says what changed
+and provides a source, without inventing time savings or adoption numbers.
+When writing your own note, distinguish your contribution from the team's work.
 
 ### Runtime compatibility
 
@@ -67,20 +76,20 @@ API is experimental; support can vary by CLI version and launch mode.
 Check that session records and capture counters appear before relying on a
 work log as complete. MCP tools remain available for explicit saves.
 
-### When the agent will use this
-
-The agent picks up these tools when you say (anything close to) one of:
-
-> brag · log work · save accomplishment · what did I ship · review my work · summarize my impact · generate work log · prep my brag sheet · promo packet · perf review · Connect prep · self-review · weekly recap · monthly summary · what did I do this quarter
-
-You don't need to memorize the list — just talk naturally about your work and the agent will figure it out.
-
-## Install (60 seconds)
+## Install
 
 Use a current Copilot CLI with
 [plugin extension support](https://docs.github.com/en/copilot/tutorials/create-an-extension).
 The plugin uses the SDK supplied by the CLI: no npm install or hosted service is
 needed for automatic capture.
+
+| Install path | What it installs |
+|---|---|
+| GitHub marketplace (recommended) | Current `main`, including the recent capture and installation fixes |
+| Downloaded Bash / PowerShell installer | Current `main` as a legacy user extension |
+| npm | Published v1.2.0; it does **not** include the recent fixes on `main` |
+
+Use the marketplace for a new installation. Choose one path, not several.
 
 ### Recommended: GitHub-backed plugin
 
@@ -95,8 +104,7 @@ The third command enables experimental features once for the selected Copilot
 profile; it is not limited to this plugin. Follow your organization's policy.
 Future sessions can start with just `copilot`. If you prefer not to persist
 that setting, omit the third command and use `copilot --experimental` for each
-session instead. Both installation methods below use the same native extension
-and also require experimental features.
+session instead. The legacy native extension also requires experimental features.
 
 Approve the extension's hooks when prompted. In the session, open
 `/extensions manage` and confirm `copilot-brag-sheet` is running.
@@ -117,9 +125,15 @@ curl -fsSL https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/i
 irm https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.ps1 | iex
 ```
 
-The interactive setup wizard runs automatically when your terminal supports it.
+These scripts fetch the default branch when run outside a source checkout.
+From a checkout, they install that checkout's files. The setup wizard runs
+when an interactive terminal is available.
 
 ### Alternative: from npm
+
+The published package is still **v1.2.0**. It is an older release, not an
+equivalent route to the current GitHub version. Prefer the marketplace for the
+latest capture fixes.
 
 ```bash
 npm install -g copilot-brag-sheet
@@ -181,37 +195,37 @@ five-minute walkthrough from captured work to a review draft.
 
 ## Use
 
-### Two things you do, ever
+### Save the result, not just the activity
 
-**1. Say "brag" when you ship something.**
+When you finish meaningful work, say "brag" and provide the result, your role,
+and a permitted source link. If you have not measured the outcome, say so.
+The agent should not add metrics you did not supply.
 
-```
-You: brag — refactored auth to managed identity, killed 3 secret-rotation incidents/qtr
-Agent: [calls save_to_brag_sheet with summary, category, and impact]
-```
-
-**2. Run "generate my work log" before review season.**
+### Review your notes
 
 ```
-You: generate my work log
-Agent: [calls generate_work_log → writes a categorized markdown file you can paste into your perf doc]
+Show me my saved work from the last two weeks.
 ```
 
-Everything else (file tracking, PR detection, git actions) is automatic. Most users only do step 2 once per quarter.
-
-### Optional: review recent work
+For a draft:
 
 ```
-You: show me my last 2 weeks
-Agent: [calls review_brag_sheet]
+Generate my work log. Then draft a short review from my saved entries.
+Group related work, cite the sources, and flag anything missing.
+Keep my contribution separate from team outcomes. Do not invent metrics.
 ```
+
+The work log is generated from stored records; the AI host writes the draft.
+Read it before sharing. Automatic session activity is optional in the log
+and is not a substitute for saved accomplishments.
 
 ## Examples
 
 <details>
 <summary><strong>What a session record looks like</strong> (auto-captured JSON)</summary>
 
-Every Copilot CLI session automatically produces a JSON record like this:
+The extension records active-session data in this shape. This is an
+illustrative record, not a real user's history:
 
 ```json
 {
@@ -228,7 +242,7 @@ Every Copilot CLI session automatically produces a JSON record like this:
   "filesCreated": ["docs/backfill-guide.md"],
   "prsCreated": [],
   "significantActions": ["git commit", "git push"],
-  "taskDescription": "Add Microsoft preset support to config",
+  "taskDescription": "Add a configuration option",
   "status": "finalized",
   "capture": {
     "promptCount": 2,
@@ -249,99 +263,31 @@ You don't write these — they're captured automatically in the background.
 
 ### What a brag sheet entry looks like
 
-When you (or the AI) calls `save_to_brag_sheet`:
-
-```
-You: "brag — shipped the auth service refactor"
-Agent: I'll save that to your brag sheet.
-
-  Summary: Refactored auth service to use managed identity → eliminated 3 secret 
-           rotation incidents per quarter → reduced on-call burden for the team
-  Category: infrastructure
-  Impact: Eliminated recurring secret rotation incidents, improved team velocity
-  
-  ✅ Entry saved to brag sheet [infrastructure]: "Refactored auth service..."
-```
-
-The stored entry:
+For the [public example above](#a-real-example), selected entry fields could be:
 
 ```json
 {
   "type": "entry",
-  "summary": "Refactored auth service to use managed identity → eliminated 3 secret rotation incidents per quarter",
-  "category": "infrastructure",
-  "impact": "Eliminated recurring secret rotation incidents, improved team velocity",
-  "repo": "auth-service",
+  "summary": "Added GitHub marketplace installation and updates",
+  "category": "tooling",
+  "impact": "Native installation no longer requires npm. Evidence: https://github.com/microsoft/copilot-brag-sheet/pull/72",
+  "repo": "copilot-brag-sheet",
   "branch": "main"
 }
 ```
 
 ### What the generated work log looks like
 
-Running `generate_work_log` produces a Markdown file like this:
+The corresponding work-log excerpt:
 
 ```markdown
 # Work Impact Log
 
-## Week of 2025-04-14
+## Week of 2026-11-02
 
-### 🚀 PRs & Features
-- **[copilot-brag-sheet] Built and published v2 with modular architecture** — 107 tests, cross-platform CI
-
-### 🏗️ Infrastructure
-- **[auth-service] Refactored auth to managed identity** — Eliminated 3 secret rotation incidents/quarter
-
-### 🚨 On-Call
-- **[api-gateway] Mitigated cascading timeout incident** — Restored service in 12 min, 0 customer impact
-
-## Week of 2025-04-07
-
-### 🐛 Bug Fixes
-- **[dashboard] Fixed timezone rendering in analytics charts** — Unblocked APAC team reporting
+### 🔧 Tooling & DX
+- **[copilot-brag-sheet] Added GitHub marketplace installation and updates** — Native installation no longer requires npm. Evidence: https://github.com/microsoft/copilot-brag-sheet/pull/72
 ```
-
-### What reviewing your work looks like
-
-```
-You: "review my work from the last 2 weeks"
-Agent: [calls review_brag_sheet with weeks=2]
-
-Here's your recent work:
-
-## Week of 2025-04-14
-### 🚀 PRs & Features
-- **Built and published copilot-brag-sheet v2** — modular architecture, 107 tests
-
-### 🏗️ Infrastructure  
-- **Refactored auth service to managed identity** — eliminated secret rotation incidents
-
-This looks strong for your Connect review. The auth refactor is a great 
-example of reducing operational burden — want me to help frame it as a 
-business impact statement?
-```
-
-<details>
-<summary><strong>Microsoft preset in action</strong></summary>
-
-With `{ "preset": "microsoft" }` in your config, the AI automatically frames entries for Connect:
-
-```
-You: "brag — I shipped the Grafana dashboard migration"
-
-Agent: I'll frame this for Connect. Here's what I'd save:
-
-  Summary: Led Grafana dashboard migration to Azure Managed Grafana → 
-           consolidated 15 dashboards across 3 teams → reduced 
-           monitoring infrastructure costs by 40%
-  Category: infrastructure
-  Impact: Reduced operational toil for SRE team, improved cross-team 
-          visibility into service health metrics
-  
-  This aligns well with your Core Priority around operational excellence.
-  Want me to save this?
-```
-
-</details>
 
 <details>
 <summary><strong>How It Works</strong> (internals — most users don't need this)</summary>
@@ -413,7 +359,6 @@ Place a `config.json` in your data directory to customize:
 
 ```json
 {
-  "preset": "microsoft",
   "categories": [
     { "id": "deployment", "emoji": "🚢", "label": "Deployments" }
   ],
@@ -421,7 +366,7 @@ Place a `config.json` in your data directory to customize:
     "includeSessionLog": true
   },
   "git": {
-    "enabled": true,
+    "enabled": false,
     "push": false
   }
 }
@@ -434,7 +379,7 @@ Place a `config.json` in your data directory to customize:
 | `output.defaultFormat` | string | Output format for entries (default: `"bullets"`) |
 | `git.enabled` | boolean | Enable local git history for data directory |
 | `git.push` | boolean | Auto-push to a remote git repo |
-| `preset` | string | Preset profile — currently `"microsoft"` (see below) |
+| `preset` | string | Optional context preset; currently `"microsoft"`. It does not connect to other services. |
 
 ### Built-in Categories
 
@@ -494,32 +439,14 @@ Scan my git log since January and log the significant work to my brag sheet.
 Review my merged GitHub PRs since December and save the impactful ones.
 ```
 
-The extension doesn't do the scanning — **Copilot CLI is the backfill tool**. The extension just stores whatever it produces. See the full **[Backfill Guide](docs/backfill-guide.md)** for source-by-source instructions covering Copilot sessions, VS Code Chat, ADO PRs, GitHub PRs, git commits, ICM incidents, and Teams/M365.
-
-## Microsoft Employees (Connect / Performance Reviews)
-
-If you're at Microsoft, a one-line preset gives you Connect-optimized framing:
-
-```json
-{ "preset": "microsoft" }
-```
-
-Or just answer "y" during installation — the install script sets it up for you.
-
-**What changes:**
-- The AI frames entries using business impact language ("Did X → Result Y → Evidence Z")
-- `review_brag_sheet` output is labeled for Connect review
-- The AI knows about Microsoft internal tools (ADO, ICM, Kusto, Teams)
-- Session activity log is included by default
-
-**What doesn't change:**
-- All data stays local — nothing is sent anywhere
-- The same tools work the same way
-- Non-Microsoft users get the same experience, just without the Connect framing
+Backfill is an explicit task for your AI host, not background collection by
+the extension. Agree on the sources, date range, and proposed entries before
+saving. Use only sources your account and host are approved to access.
 
 ## Cloud Sync
 
-Point your data directory to a synced folder and your work log follows you across machines:
+If your data-handling rules permit it, point your data directory to an approved
+synced folder. For example:
 
 ```bash
 # OneDrive
@@ -532,11 +459,13 @@ export WORK_TRACKER_DIR="$HOME/Dropbox/work-tracker"
 export WORK_TRACKER_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/work-tracker"
 ```
 
-Atomic writes (tmp → fsync → rename) prevent corruption from sync conflicts.
+Atomic writes protect against interrupted local writes, not cloud-sync
+conflicts. Avoid simultaneous writers across machines and keep backups.
 
-## Update
+## Update a legacy installation
 
-Re-run the install script to update to the latest version:
+For marketplace installations, use [plugin updates](#update-or-remove).
+For a legacy installation, close Copilot before re-running the installer:
 
 ```bash
 # macOS / Linux
@@ -552,9 +481,16 @@ Or if you cloned the repo:
 cd copilot-brag-sheet && git pull && ./install.sh
 ```
 
-Your config and data are never touched — only the extension files are replaced.
+The installer replaces extension files; records are stored separately.
+The setup wizard can change configuration if you choose new settings.
+Keep a fallback copy before updating: script-based installation is not an
+atomic upgrade and can fail after removing the previous extension files.
 
-## Uninstall
+## Uninstall a legacy installation
+
+For a marketplace install, use `copilot plugin uninstall copilot-brag-sheet@brag-sheet`.
+The commands below apply only to legacy installs in the default Copilot home.
+If you set `COPILOT_HOME`, use that home instead.
 
 ```bash
 # macOS / Linux
@@ -571,7 +507,11 @@ Your data stays in the OS app-data directory — delete it manually if you want 
 <details>
 <summary><strong>Does this send my data anywhere?</strong></summary>
 
-No. All data is stored locally in your OS app-data directory. Zero telemetry, zero network calls. The core library has no runtime dependencies; the cross-engine MCP server (`mcp-server.mjs`) uses the official MCP SDK and Zod. If you enable git push, data goes only to a remote you configure.
+The plugin stores records locally and emits no telemetry. Reviewing records
+returns their content to your AI host, so that processing is not necessarily
+local. Optional git push sends data to the remote you configure. Keep backup
+off unless the destination is approved, and keep secrets out of entries:
+formatting sanitization is not secret redaction.
 </details>
 
 <details>
@@ -612,21 +552,25 @@ keep your work-history directory intact.
 <details>
 <summary><strong>How do I move data between machines?</strong></summary>
 
-Enable git backup in your config, add a remote repo, and your entries sync automatically. Or point `WORK_TRACKER_DIR` to a cloud-synced folder (OneDrive, Dropbox, iCloud).
+Use an approved backup or synced folder, and set `WORK_TRACKER_DIR` to the data
+location on the new machine. Optional git backup excludes session records;
+it is not a complete copy of your history. Keep a backup before moving data,
+and avoid concurrent writes from multiple machines.
 </details>
 
 ## Requirements
 
 - Node.js 18+
 - [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli)
-- Local-first: data stays on your machine, no telemetry
+- A host/account approved for the information you process
 
 ## Development
 
 ```bash
 git clone https://github.com/microsoft/copilot-brag-sheet.git
 cd copilot-brag-sheet
-npm test        # 107 tests, ~1s
+npm install
+npm test
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.

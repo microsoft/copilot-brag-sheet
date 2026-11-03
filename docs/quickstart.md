@@ -3,13 +3,37 @@
 ## Set up once
 
 Install the [GitHub-backed plugin](../README.md#recommended-github-backed-plugin),
-start `copilot --experimental`, and approve the extension's hooks. Check
+enable experimental features once with `copilot config experimental on`, then
+start `copilot` and approve the extension's hooks. This setting applies to the
+selected Copilot profile and enables experimental features generally, not just
+this plugin. Follow your organization's policy. For a session-only opt-in,
+use `copilot --experimental` instead of changing the setting. Check
 `/extensions manage` before relying on capture. Use only one installation:
 the plugin or the older extension installer, not both.
 
 No account, hosted service, or git backup is required by this plugin. Your host
 still requires its own authentication. Records use your OS app-data directory
 unless you explicitly set `WORK_TRACKER_DIR`.
+
+### Ask Copilot to help install
+
+You can give your existing Copilot session this prompt:
+
+> Install the copilot-brag-sheet plugin from microsoft/copilot-brag-sheet into
+> the Copilot profile used by this session. Confirm the active COPILOT_HOME
+> (or default home), inspect installed plugins and legacy extensions, and stop
+> if there is a conflicting copy. Register the marketplace with
+> `copilot plugin marketplace add microsoft/copilot-brag-sheet` and install
+> `copilot-brag-sheet@brag-sheet`, skipping steps already completed. Verify the
+> installed path and enabled status. If experimental features are disabled,
+> explain the profile-wide setting and ask before enabling it. Leave existing
+> records, other plugins, and authentication unchanged. Never print credentials.
+> If access is blocked, report the error rather than changing credentials or
+> bypassing policy. Tell me how to restart and check the extension.
+
+Review tool-permission requests before approving them. Installation is not
+capture verification: restart into the same profile, check `/extensions manage`,
+and run the synthetic demo below.
 
 ## Understand what is captured
 
@@ -32,11 +56,13 @@ New-Item -ItemType Directory -Path $env:WORK_TRACKER_DIR | Out-Null
 '{"git":{"enabled":false,"push":false},"output":{"includeSessionLog":true}}' |
   Set-Content -Encoding ascii (Join-Path $env:WORK_TRACKER_DIR 'config.json')
 Write-Output $env:WORK_TRACKER_DIR
-copilot --experimental
+copilot
 ```
 
 This override applies only to this shell and its child processes. It does not
 move or import existing records. Use synthetic content throughout the demo.
+If you chose session-only activation above, launch with `copilot --experimental`
+instead.
 
 1. Ask: **"Create demo-evidence.txt containing 'Synthetic demo: startup benchmark,
    before 10 minutes, after 6 minutes'. This is demonstration data, not a real

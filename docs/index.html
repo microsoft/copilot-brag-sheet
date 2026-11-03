@@ -6,7 +6,7 @@
     <title>copilot-brag-sheet — turn vague "what did I do?" into evidence-backed impact statements</title>
     <meta
       name="description"
-      content="A GitHub Copilot CLI extension that auto-records what you ship — files, PRs, git actions — so performance review season has receipts instead of a blank page. Local-first, zero deps, zero telemetry."
+      content="Capture work activity in GitHub Copilot CLI, save outcomes with evidence, and prepare a performance-review draft from your records. GitHub-backed installation, local storage, zero plugin telemetry."
     />
     <link rel="canonical" href="https://microsoft.github.io/copilot-brag-sheet/" />
     <meta name="theme-color" content="#0d1117" />
@@ -17,7 +17,7 @@
     <meta property="og:title" content="copilot-brag-sheet — automatic work tracking for GitHub Copilot CLI" />
     <meta
       property="og:description"
-      content="Turn vague 'what did I do?' into evidence-backed impact statements. Local-first Copilot CLI extension that records every session as you ship."
+      content="Capture work activity, add the outcomes that matter, and draft your performance review from saved evidence. A local-first plugin for GitHub Copilot CLI."
     />
     <meta
       property="og:image"
@@ -51,8 +51,7 @@
         "applicationCategory": "DeveloperApplication",
         "applicationSubCategory": "CLI",
         "operatingSystem": "macOS, Linux, Windows",
-        "softwareVersion": "1.0.3",
-        "downloadUrl": "https://www.npmjs.com/package/copilot-brag-sheet",
+        "downloadUrl": "https://microsoft.github.io/copilot-brag-sheet/#install",
         "license": "https://opensource.org/licenses/MIT",
         "image": "https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/docs/og-image.png",
         "offers": {
@@ -70,7 +69,7 @@
           "name": "Microsoft",
           "url": "https://github.com/microsoft"
         },
-        "keywords": "brag sheet, performance review, Copilot CLI extension, GitHub Copilot, work log, impact tracking, promo packet, Connect prep, self-review"
+        "keywords": "brag sheet, performance review, Copilot CLI extension, GitHub Copilot, work log, impact tracking, promo packet, self-review"
       }
     </script>
 
@@ -80,8 +79,7 @@
         "@context": "https://schema.org",
         "@type": "HowTo",
         "name": "Install copilot-brag-sheet",
-        "description": "Install the copilot-brag-sheet extension for GitHub Copilot CLI in three ways: curl one-liner, npm global install, or git clone.",
-        "totalTime": "PT1M",
+        "description": "Install the GitHub-backed plugin, enable experimental extensions, and verify that capture is running.",
         "supply": [
           { "@type": "HowToSupply", "name": "Node.js 18+" },
           { "@type": "HowToSupply", "name": "GitHub Copilot CLI with active subscription" }
@@ -92,27 +90,33 @@
         "step": [
           {
             "@type": "HowToStep",
-            "name": "Install via curl (recommended)",
-            "text": "Run: curl -fsSL https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.sh | bash",
-            "url": "https://github.com/microsoft/copilot-brag-sheet#install"
+            "name": "Add the marketplace",
+            "text": "Run: copilot plugin marketplace add microsoft/copilot-brag-sheet",
+            "url": "https://microsoft.github.io/copilot-brag-sheet/#install"
           },
           {
             "@type": "HowToStep",
-            "name": "Install via npm",
-            "text": "Run: npm install -g copilot-brag-sheet",
-            "url": "https://www.npmjs.com/package/copilot-brag-sheet"
+            "name": "Install the plugin",
+            "text": "Run: copilot plugin install copilot-brag-sheet@brag-sheet",
+            "url": "https://microsoft.github.io/copilot-brag-sheet/#install"
           },
           {
             "@type": "HowToStep",
-            "name": "Install from source",
-            "text": "Run: git clone https://github.com/microsoft/copilot-brag-sheet && cd copilot-brag-sheet && ./install.sh",
-            "url": "https://github.com/microsoft/copilot-brag-sheet"
+            "name": "Enable experimental features once",
+            "text": "If your policy permits it, run: copilot config experimental on. This enables experimental features for the selected Copilot profile, not just this plugin. For a session-only opt-in, use copilot --experimental instead of persisting the setting.",
+            "url": "https://microsoft.github.io/copilot-brag-sheet/#install"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Start Copilot CLI",
+            "text": "Run: copilot. Approve the extension's hooks when prompted. Future sessions use the saved experimental setting.",
+            "url": "https://microsoft.github.io/copilot-brag-sheet/#install"
           },
           {
             "@type": "HowToStep",
             "name": "Verify",
-            "text": "Open Copilot CLI and say 'brag' — the agent will offer to save your latest work.",
-            "url": "https://github.com/microsoft/copilot-brag-sheet#how-to-use"
+            "text": "Open /extensions manage and confirm copilot-brag-sheet is running. Follow the synthetic demo to verify captured activity and a saved entry.",
+            "url": "https://microsoft.github.io/copilot-brag-sheet/#demo"
           }
         ]
       }
@@ -145,6 +149,8 @@
       }
       a { color: var(--accent); text-decoration: none; }
       a:hover { text-decoration: underline; }
+      a:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+      section[id] { scroll-margin-top: 110px; }
       code, pre, kbd {
         font-family: "Geist Mono", "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
         font-size: 0.9em;
@@ -175,7 +181,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 14px 0;
+        padding: 14px 24px;
       }
       .brand {
         display: flex;
@@ -289,11 +295,6 @@
       }
 
       /* Install cards */
-      .install-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 16px;
-      }
       .install-card {
         background: var(--bg-elevated);
         border: 1px solid var(--border);
@@ -320,7 +321,7 @@
       }
       .install-card .desc {
         font-size: 13px;
-        color: var(--subtle);
+        color: var(--muted);
         margin: 0 0 14px;
       }
       .install-card pre {
@@ -356,9 +357,18 @@
       }
       .triggers .hint {
         margin: 18px 0 0;
-        color: var(--subtle);
+        color: var(--muted);
         font-size: 14px;
       }
+      .steps { padding-left: 24px; }
+      .steps li { margin-bottom: 18px; }
+      blockquote {
+        margin: 20px 0;
+        padding: 16px 20px;
+        border-left: 3px solid var(--accent);
+        background: var(--bg-elevated);
+      }
+      blockquote p { margin: 0; }
 
       /* Comparison table */
       .compare {
@@ -401,7 +411,8 @@
       footer .links a { color: var(--muted); }
 
       @media (max-width: 600px) {
-        .nav-links { gap: 14px; font-size: 13px; }
+        .nav-inner { flex-wrap: wrap; gap: 12px; }
+        .nav-links { flex-wrap: wrap; gap: 14px; font-size: 13px; }
         .hero { padding: 56px 0 32px; }
       }
     </style>
@@ -413,10 +424,11 @@
           <span class="mark">⚑</span>
           <span>copilot-brag-sheet</span>
         </div>
-        <nav class="nav-links">
+        <nav class="nav-links" aria-label="Main navigation">
           <a href="#install">Install</a>
-          <a href="#triggers">Use</a>
-          <a href="#why">Why</a>
+          <a href="#demo">Try it</a>
+          <a href="#review">Review prep</a>
+          <a href="#privacy">Privacy</a>
           <a href="https://github.com/microsoft/copilot-brag-sheet">GitHub ↗</a>
         </nav>
       </div>
@@ -427,8 +439,9 @@
         <div class="wrap">
           <h1>copilot-brag-sheet</h1>
           <p class="tagline">
-            Turn vague <em>"what did I do?"</em> into evidence-backed
-            <span class="impact">impact statements</span> — automatically, every Copilot CLI session.
+            Turn <em>"what did I do?"</em> into an
+            <span class="impact">evidence-backed review draft</span>.
+            Capture activity as you work in Copilot CLI, then add the outcomes that matter.
           </p>
           <p class="meta">
             <strong>🔒 Local-first</strong> &nbsp;·&nbsp;
@@ -442,8 +455,8 @@
             <a href="https://github.com/microsoft/copilot-brag-sheet/blob/main/LICENSE"><img alt="MIT" src="https://img.shields.io/badge/License-MIT-blue.svg" /></a>
           </div>
           <div class="cta-row">
-            <a class="btn btn-primary" href="#install">Install in 30 seconds</a>
-            <a class="btn btn-secondary" href="https://github.com/microsoft/copilot-brag-sheet">View on GitHub</a>
+            <a class="btn btn-primary" href="#install">Install the plugin</a>
+            <a class="btn btn-secondary" href="#demo">Try the five-minute demo</a>
           </div>
         </div>
       </section>
@@ -452,48 +465,104 @@
         <div class="demo-frame">
           <img
             src="https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/demo/demo.gif"
-            alt="Demo: typing 'brag' in Copilot CLI saves the current accomplishment with full session context"
+            alt="Illustration of saving an accomplishment by typing 'brag' in Copilot CLI"
             loading="lazy"
           />
         </div>
+        <p style="color: var(--muted); font-size: 14px;">Illustrative save flow. Use the walkthrough below to verify the current plugin.</p>
       </div>
 
       <section id="install">
         <div class="wrap">
-          <h2>Install</h2>
+          <h2>Set up once</h2>
           <p class="lede">
             Requires <a href="https://nodejs.org/">Node.js 18+</a> and the
             <a href="https://docs.github.com/en/copilot/github-copilot-in-the-cli">GitHub Copilot CLI</a>
-            with an active Copilot subscription.
+            with an active Copilot subscription. Use a current CLI with
+            <a href="https://docs.github.com/en/copilot/tutorials/create-an-extension">experimental extension support</a>.
+            No npm install or separate plugin account is needed.
           </p>
 
-          <div class="install-grid">
-            <div class="install-card">
-              <h3>curl <span class="label-tag">Recommended</span></h3>
-              <p class="desc">One-liner. Works on macOS, Linux, and Windows (Git Bash / WSL).</p>
-<pre><code>curl -fsSL https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/install.sh | bash</code></pre>
-            </div>
-            <div class="install-card">
-              <h3>npm</h3>
-              <p class="desc">Global install — also gives you <code>npm update -g copilot-brag-sheet</code>.</p>
-<pre><code>npm install -g copilot-brag-sheet</code></pre>
-            </div>
-            <div class="install-card">
-              <h3>Git clone</h3>
-              <p class="desc">For contributors and source-tracking.</p>
-<pre><code>git clone https://github.com/microsoft/copilot-brag-sheet
-cd copilot-brag-sheet
-./install.sh</code></pre>
-            </div>
+          <div class="install-card">
+            <h3>GitHub-backed plugin <span class="label-tag">Recommended</span></h3>
+            <p class="desc">Run these commands in PowerShell, macOS Terminal, or a Linux shell.</p>
+<pre tabindex="0" role="region" aria-label="Plugin installation commands"><code>copilot plugin marketplace add microsoft/copilot-brag-sheet
+copilot plugin install copilot-brag-sheet@brag-sheet
+copilot config experimental on
+copilot</code></pre>
           </div>
+          <p>The third command is a <strong>one-time opt-in</strong> to experimental features
+            for this Copilot profile, not just brag-sheet. Follow your organization's policy.
+            After that, launch normally with <code>copilot</code>.
+            Prefer session-only activation? Skip the third command and launch with
+            <code>copilot --experimental</code> instead.</p>
+          <p>Approve the extension's hooks when prompted. Open <code>/extensions manage</code>
+            and confirm <code>copilot-brag-sheet</code> is running before relying on capture.
+            The extension API is experimental; behavior can vary by CLI version and launch mode.</p>
+          <p><strong>Already using the older installer?</strong> Close your CLI sessions and move the old
+            <code>copilot-brag-sheet</code> folder out of your Copilot home's <code>extensions</code> directory.
+            Keep it as a fallback; do not run both copies. Leave your separate work-data directory untouched.
+            Install into the same CLI profile you use for work.</p>
+          <p>Need another installation method? See the
+            <a href="https://github.com/microsoft/copilot-brag-sheet#alternative-one-liner">alternative installers</a>
+            (curl, PowerShell, or npm) and
+            <a href="https://github.com/microsoft/copilot-brag-sheet#faq">troubleshooting guide</a>.
+            These install the same native extension; they also need experimental features enabled.</p>
+          <p>Want your agent to handle setup? Use the
+            <a href="https://github.com/microsoft/copilot-brag-sheet/blob/main/docs/quickstart.md#ask-copilot-to-help-install">installation prompt</a>,
+            then restart and verify the extension.</p>
+          <details>
+            <summary>Update or remove the plugin</summary>
+            <div class="install-card">
+              <p>Refresh the marketplace and plugin, then restart Copilot CLI:</p>
+<pre tabindex="0" role="region" aria-label="Plugin update commands"><code>copilot plugin marketplace update brag-sheet
+copilot plugin update copilot-brag-sheet@brag-sheet</code></pre>
+              <p>To remove it, run <code>copilot plugin uninstall copilot-brag-sheet@brag-sheet</code>.
+                Your saved records are stored separately; uninstalling the plugin does not remove them.</p>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section id="demo">
+        <div class="wrap">
+          <h2>Try it with synthetic work</h2>
+          <p class="lede">Five minutes, a disposable project, and no real work information.
+            See a file change become an activity record, then save an outcome and generate a draft.</p>
+          <ol class="steps">
+            <li><strong>Start a separate demo session.</strong> Follow the
+              <a href="https://github.com/microsoft/copilot-brag-sheet/blob/main/docs/quickstart.md#five-minute-demo">PowerShell demo setup</a>
+              to use a temporary data directory with git backup off. This keeps sample entries out of your real history.</li>
+            <li><strong>Create evidence.</strong> Ask Copilot: "Create demo-evidence.txt containing
+              'Synthetic demo: startup benchmark, before 10 minutes, after 6 minutes'.
+              This is demonstration data, not a real achievement."</li>
+            <li><strong>Check capture.</strong> Ask it to read the current session JSON in the demo directory,
+              confirm the filename appears in <code>filesCreated</code> or <code>filesEdited</code>,
+              and show the capture counters. Do not save an accomplishment yet.</li>
+            <li><strong>Save the result.</strong> Ask: "Save a synthetic demo accomplishment:
+              improved fixture startup. Category: tooling. Impact: synthetic benchmark decreased from
+              10 to 6 minutes. Evidence: demo-evidence.txt. Tag it demo."</li>
+            <li><strong>Generate and inspect.</strong> Ask: "Generate my work log, then draft a short
+              review paragraph using only the saved demo entry. Keep the synthetic label, cite the evidence,
+              and do not invent delivery status or additional metrics."</li>
+          </ol>
+          <p>Confirm the entry exists in the saved JSON and generated Markdown, not just in the assistant's reply.
+            Follow the walkthrough's cleanup step after exiting the demo.</p>
+          <blockquote>
+            <p><strong>Illustrative output, not a real achievement:</strong> In the synthetic fixture,
+              startup time decreased from 10 to 6 minutes (evidence: demo-evidence.txt).
+              No production or customer impact has been established.</p>
+          </blockquote>
         </div>
       </section>
 
       <section id="triggers">
         <div class="wrap">
-          <h2>When the agent will use this</h2>
+          <h2>Make the record useful as you work</h2>
           <p class="lede">
-            You don't need to memorize anything — just talk naturally about your work. Copilot picks up the brag-sheet tools when you say (anything close to) one of these:
+            Automatic capture remembers activity, not business impact. At a meaningful milestone,
+            say "brag" and add what changed, your contribution, who benefited, the observed result,
+            and a source link you are allowed to retain. If the outcome is not known yet, say so.
           </p>
           <div class="triggers">
             <ul class="trigger-list">
@@ -507,14 +576,53 @@ cd copilot-brag-sheet
               <li>prep my brag sheet</li>
               <li>promo packet</li>
               <li>perf review</li>
-              <li>Connect prep</li>
               <li>self-review</li>
               <li>weekly recap</li>
               <li>monthly summary</li>
               <li>what did I do this quarter</li>
             </ul>
-            <p class="hint">All processing is local. Records live in your OS app-data directory as structured JSON with atomic writes and orphan recovery.</p>
+            <p class="hint">Records live in your OS app-data directory as structured JSON.
+              Work outside the active CLI session is not captured automatically: add it manually
+              or explicitly request a scoped backfill. File counts alone are not accomplishments.</p>
           </div>
+        </div>
+      </section>
+
+      <section id="review">
+        <div class="wrap">
+          <h2>Start review season with evidence</h2>
+          <p class="lede">Use your saved records to prepare a draft, not a claim that every activity shipped.
+            Agree on the review period and ask Copilot:</p>
+          <blockquote>
+            <p>Use my saved brag-sheet records for the agreed review period. Group related work into
+              impact themes. Separate my contributions from team outcomes, cite supporting entries
+              or source links, and flag missing evidence. Do not infer business impact from file counts
+              or invent metrics. Show me the draft before saving or sharing anything.</p>
+          </blockquote>
+          <p>Review the dates and sources, remove sensitive details, and edit the draft in your own voice.
+            The plugin provides records and a generated work log; your AI host helps write the narrative.</p>
+          <p><a href="https://github.com/microsoft/copilot-brag-sheet/blob/main/docs/quickstart.md">Read the full capture-to-review guide</a></p>
+        </div>
+      </section>
+
+      <section id="privacy">
+        <div class="wrap">
+          <h2>Local records. Deliberate sharing.</h2>
+          <p class="lede">The plugin stores records on your machine and emits no telemetry of its own.
+            That does not make AI processing offline or make every backup destination appropriate.</p>
+          <ul class="steps">
+            <li><strong>Use an approved host and account.</strong> Review tools return saved content to
+              your AI host. Follow your organization's rules for the information you process.</li>
+            <li><strong>Keep secrets out.</strong> Do not include credentials, raw customer data, or
+              unnecessary sensitive details. Formatting sanitization is not secret redaction.</li>
+            <li><strong>Leave git backup off unless approved.</strong> Backup is optional. A private personal
+              repository is not automatically a suitable destination for employer information.</li>
+            <li><strong>Inspect before sharing.</strong> Check generated logs and drafts.
+              Use synthetic data in demos, screenshots, and public issues.</li>
+          </ul>
+          <p>Capture depends on the experimental host API and can be incomplete.
+            Check session records and capture counters rather than assuming every action was recorded.
+            See the <a href="https://github.com/microsoft/copilot-brag-sheet/blob/main/docs/security-model.md">security model and limitations</a>.</p>
         </div>
       </section>
 
@@ -534,11 +642,11 @@ cd copilot-brag-sheet
                 </tr>
               </thead>
               <tbody>
-                <tr><td>Trigger</td><td>LLM has to remember</td><td>Auto-captures every session</td></tr>
+                <tr><td>Trigger</td><td>Guidance used by the agent</td><td>Hooks capture activity while the extension is running</td></tr>
                 <tr><td>Data capture</td><td>LLM runs shell commands by hand</td><td>Direct file/PR/git tracking via Node API</td></tr>
-                <tr><td>Formatting</td><td>LLM formats markdown each time</td><td>Deterministic, typed, crash-safe</td></tr>
-                <tr><td>Storage</td><td>Markdown stored "somewhere"</td><td>Structured local JSON, atomic writes, orphan recovery</td></tr>
-                <tr><td>Updates</td><td>Re-curl to update</td><td><code>npm update</code> or one-line re-install</td></tr>
+                <tr><td>Formatting</td><td>Agent-generated output</td><td>Deterministic Markdown rendering from saved records</td></tr>
+                <tr><td>Storage</td><td>Depends on the host and workflow</td><td>Structured local JSON, atomic writes, orphan recovery</td></tr>
+                <tr><td>Updates</td><td>Update the installed skill</td><td>Marketplace and plugin update commands</td></tr>
               </tbody>
             </table>
           </div>
@@ -555,13 +663,14 @@ cd copilot-brag-sheet
 
     <footer>
       <div class="wrap">
-        <div>Built by <a href="https://github.com/microsoft">Microsoft</a> · MIT licensed · v1.0.3</div>
+        <div>Built by <a href="https://github.com/microsoft">Microsoft</a> · MIT licensed</div>
         <div class="links">
           <a href="https://github.com/microsoft/copilot-brag-sheet">Source</a>
           <a href="https://www.npmjs.com/package/copilot-brag-sheet">npm</a>
           <a href="https://github.com/microsoft/copilot-brag-sheet/issues">Issues</a>
           <a href="https://github.com/microsoft/copilot-brag-sheet/blob/main/CHANGELOG.md">Changelog</a>
           <a href="https://github.com/microsoft/copilot-brag-sheet/blob/main/ROADMAP.md">Roadmap</a>
+          <a href="https://github.com/microsoft/copilot-brag-sheet/blob/main/docs/security-model.md">Security model</a>
         </div>
       </div>
     </footer>

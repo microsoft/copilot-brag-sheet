@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Changed
 
+- **Landing-page onboarding** — lead with GitHub-backed installation, a synthetic capture-to-review demo, and evidence-based review prompts. Document one-time experimental activation, session-only opt-in, and an agent-assisted installation prompt. Clarify AI-host processing, capture limitations, and sensitive-data handling.
 - **Copilot plugin tools use the native extension** — conventional auto-discovery files moved to `mcp-config.example.json` and `hooks/classification.json`, preventing a duplicate MCP startup and redundant classifier hook. The Claude manifest retains explicit MCP and hook declarations; standalone MCP commands are unchanged. Integrations that reference the old filenames must update those paths.
 - **Dependency maintenance** — refresh the lockfile for MCP SDK 1.30.0, Hono 4.13.1, `@hono/node-server` 1.19.17, `body-parser` 2.3.0, `ip-address` 10.4.0, and `fast-uri` 3.1.7.
 - **Workflow dependencies** — update checkout and setup-node to v7, pin all workflow actions to full commit SHAs, and apply a seven-day Dependabot cooldown to GitHub Actions updates.

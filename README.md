@@ -58,9 +58,8 @@ Plus three tools the agent can call on your behalf:
 |---------|-------------|---------------|--------|
 | **Copilot CLI** | ✅ Full | ✅ Full | Experimental extension API |
 | **MCP hosts** (Claude, Cursor, VS Code) | ✅ Full | ⚠️ Phase 2 | Beta |
-| **Agency** | ✅ Full | ⚠️ Phase 2 | Beta |
 
-**MCP / Agency users:** The three tools (`save_to_brag_sheet`, `review_brag_sheet`, `generate_work_log`) work fully. Automatic session tracking (files edited, PRs created, git actions) requires the Copilot CLI `joinSession()` runtime and is not yet available in other hosts. For now, say `"brag — <accomplishment>"` to capture work manually.
+**MCP users:** The three tools (`save_to_brag_sheet`, `review_brag_sheet`, `generate_work_log`) work fully. Automatic session tracking (files edited, PRs created, git actions) requires the Copilot CLI `joinSession()` runtime and is not provided by the standalone MCP server. Say `"brag — <accomplishment>"` to capture work manually.
 
 **Copilot CLI users:** Automatic tracking requires experimental features to be
 enabled and the extension's hooks to be approved. The underlying `joinSession()`
@@ -88,8 +87,16 @@ needed for automatic capture.
 ```shell
 copilot plugin marketplace add microsoft/copilot-brag-sheet
 copilot plugin install copilot-brag-sheet@brag-sheet
-copilot --experimental
+copilot config experimental on
+copilot
 ```
+
+The third command enables experimental features once for the selected Copilot
+profile; it is not limited to this plugin. Follow your organization's policy.
+Future sessions can start with just `copilot`. If you prefer not to persist
+that setting, omit the third command and use `copilot --experimental` for each
+session instead. Both installation methods below use the same native extension
+and also require experimental features.
 
 Approve the extension's hooks when prompted. In the session, open
 `/extensions manage` and confirm `copilot-brag-sheet` is running.
@@ -130,7 +137,8 @@ cd copilot-brag-sheet
 
 ### Activate
 
-After install, start `copilot --experimental`. Approve its hooks when prompted.
+After install, start `copilot` if experimental features are already enabled for
+that profile, or `copilot --experimental` for a single session. Approve its hooks when prompted.
 On your first message you'll see:
 
 ```
@@ -582,7 +590,8 @@ Override with `WORK_TRACKER_DIR` environment variable.
 <summary><strong>Why don't I see "Work logger active"?</strong></summary>
 
 The message appears on your **first message** after starting Copilot CLI.
-Start with `copilot --experimental` and approve the extension's hooks.
+Confirm experimental features are enabled (once with `copilot config experimental on`,
+or for this launch with `copilot --experimental`) and approve the extension's hooks.
 For a plugin install, check `copilot plugin list` and `/extensions manage`.
 For a legacy install, check your Copilot home's
 `extensions/copilot-brag-sheet/extension.mjs`. Use only one installation.
@@ -595,7 +604,7 @@ the banner alone does not prove complete capture.
 
 Yes. A current Copilot CLI supports the native extension through the
 [GitHub-backed marketplace](#recommended-github-backed-plugin).
-Start with `--experimental` and approve its hooks. If migrating from the
+Enable experimental features and approve its hooks. If migrating from the
 legacy installer, move the old extension out of your Copilot home first;
 keep your work-history directory intact.
 </details>

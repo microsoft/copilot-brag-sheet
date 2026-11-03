@@ -102,8 +102,14 @@
           },
           {
             "@type": "HowToStep",
+            "name": "Enable experimental features once",
+            "text": "If your policy permits it, run: copilot config experimental on. This enables experimental features for the selected Copilot profile, not just this plugin. For a session-only opt-in, use copilot --experimental instead of persisting the setting.",
+            "url": "https://microsoft.github.io/copilot-brag-sheet/#install"
+          },
+          {
+            "@type": "HowToStep",
             "name": "Start Copilot CLI",
-            "text": "Run: copilot --experimental. Approve the extension's hooks when prompted.",
+            "text": "Run: copilot. Approve the extension's hooks when prompted. Future sessions use the saved experimental setting.",
             "url": "https://microsoft.github.io/copilot-brag-sheet/#install"
           },
           {
@@ -482,8 +488,14 @@
             <p class="desc">Run these commands in PowerShell, macOS Terminal, or a Linux shell.</p>
 <pre tabindex="0" role="region" aria-label="Plugin installation commands"><code>copilot plugin marketplace add microsoft/copilot-brag-sheet
 copilot plugin install copilot-brag-sheet@brag-sheet
-copilot --experimental</code></pre>
+copilot config experimental on
+copilot</code></pre>
           </div>
+          <p>The third command is a <strong>one-time opt-in</strong> to experimental features
+            for this Copilot profile, not just brag-sheet. Follow your organization's policy.
+            After that, launch normally with <code>copilot</code>.
+            Prefer session-only activation? Skip the third command and launch with
+            <code>copilot --experimental</code> instead.</p>
           <p>Approve the extension's hooks when prompted. Open <code>/extensions manage</code>
             and confirm <code>copilot-brag-sheet</code> is running before relying on capture.
             The extension API is experimental; behavior can vary by CLI version and launch mode.</p>
@@ -493,7 +505,12 @@ copilot --experimental</code></pre>
             Install into the same CLI profile you use for work.</p>
           <p>Need another installation method? See the
             <a href="https://github.com/microsoft/copilot-brag-sheet#alternative-one-liner">alternative installers</a>
-            and <a href="https://github.com/microsoft/copilot-brag-sheet#faq">troubleshooting guide</a>.</p>
+            (curl, PowerShell, or npm) and
+            <a href="https://github.com/microsoft/copilot-brag-sheet#faq">troubleshooting guide</a>.
+            These install the same native extension; they also need experimental features enabled.</p>
+          <p>Want your agent to handle setup? Use the
+            <a href="https://github.com/microsoft/copilot-brag-sheet/blob/main/docs/quickstart.md#ask-copilot-to-help-install">installation prompt</a>,
+            then restart and verify the extension.</p>
           <details>
             <summary>Update or remove the plugin</summary>
             <div class="install-card">

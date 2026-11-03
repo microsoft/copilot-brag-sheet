@@ -87,7 +87,7 @@ needed for automatic capture.
 |---|---|
 | GitHub marketplace (recommended) | Current `main`, including the recent capture and installation fixes |
 | Downloaded Bash / PowerShell installer | Current `main` as a legacy user extension |
-| npm | Published v1.2.0; it does **not** include the recent fixes on `main` |
+| npm | Latest published release as a legacy user extension |
 
 Use the marketplace for a new installation. Choose one path, not several.
 
@@ -131,9 +131,8 @@ when an interactive terminal is available.
 
 ### Alternative: from npm
 
-The published package is still **v1.2.0**. It is an older release, not an
-equivalent route to the current GitHub version. Prefer the marketplace for the
-latest capture fixes.
+Use npm for versioned releases. The marketplace follows `main`, which can
+include changes not yet published to npm. Both use the native Copilot adapter.
 
 ```bash
 npm install -g copilot-brag-sheet
@@ -466,6 +465,19 @@ conflicts. Avoid simultaneous writers across machines and keep backups.
 
 For marketplace installations, use [plugin updates](#update-or-remove).
 For a legacy installation, close Copilot before re-running the installer:
+
+If you installed with npm, update the package **and** copy it into your
+Copilot profile again:
+
+```bash
+npm install -g copilot-brag-sheet@latest
+copilot-brag-sheet
+```
+
+Updating the global npm package alone does not update the installed extension.
+Restart Copilot after the installer finishes.
+
+If you used a downloaded script:
 
 ```bash
 # macOS / Linux

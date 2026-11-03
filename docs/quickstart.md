@@ -18,8 +18,9 @@ the plugin or the older extension installer, not both.
 No account, hosted service, or git backup is required by this plugin. Your host
 still requires its own authentication. Records use your OS app-data directory
 unless you explicitly set `WORK_TRACKER_DIR`.
-Use the GitHub marketplace for current code. The npm package remains an older
-v1.2.0 release and does not include the recent fixes on `main`.
+Use the GitHub marketplace for current-branch code, or
+[npm](../README.md#alternative-from-npm) for versioned releases.
+Existing npm users should follow the [two-step update](../README.md#update-a-legacy-installation).
 
 ### Ask Copilot to help install
 

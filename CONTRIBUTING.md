@@ -14,17 +14,16 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 
 ## Development Setup
 
+Use Node.js 22 or newer.
+
 ```bash
 git clone https://github.com/microsoft/copilot-brag-sheet.git
 cd copilot-brag-sheet
+npm ci
 npm test
 ```
 
-Then install runtime deps (`@modelcontextprotocol/sdk` and `zod` for the MCP server):
-
-```bash
-npm install
-```
+`npm ci` installs the reviewed lockfile, including the MCP SDK and Zod.
 
 ## Project Structure
 
@@ -67,7 +66,7 @@ These are intentional constraints — please don't change them without discussio
 | Decision | Rationale |
 |----------|-----------|
 | Minimal runtime deps | Only `@modelcontextprotocol/sdk` + `zod` (MCP server only); `lib/` stays pure Node |
-| No SQLite | Node 18 built-in SQLite is not available |
+| No SQLite | Keep saved records readable without a database engine |
 | JSON records only | Cloud-sync safe, human-readable |
 | Atomic writes (tmp→fsync→rename) | Crash-safe, OneDrive/iCloud safe |
 | OS-native app-data dirs | Cross-platform, follows OS conventions |

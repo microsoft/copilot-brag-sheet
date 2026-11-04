@@ -5,10 +5,10 @@
 
 ---
 
-## Current state — 2026-09
+## Current state — 2026-11
 
 The suite includes unit tests, subprocess adapter tests, and MCP protocol tests.
-CI matrix: `{ubuntu-latest, macos-latest, windows-latest} × {Node 18, 20, 22}` =
+CI matrix: `{ubuntu-latest, macos-latest, windows-latest} × {Node 22, 24, 26}` =
 **9 combinations** running on every PR and `main` push, plus four
 **install-smoke** jobs that exercise the curl-pipe-bash installers
 (Linux/macOS, Windows PS 5.1, Windows pwsh 7+).
@@ -53,10 +53,14 @@ No test framework dependency — we use `node:test` and
 | [`mcp-server.mjs`](../mcp-server.mjs) | `test/mcp-server.test.mjs` | 20 | Stdio protocol, Zod validation, activity-ordered pagination, structured output, format switching, and explicit-key idempotency. | Real external MCP hosts. |
 | [`hooks/post-tool-use.mjs`](../hooks/post-tool-use.mjs) | `test/hooks.test.mjs` | 7 | Subprocess stdin/stdout classification (file edit, apply_patch, PR creation, unrecognized tool), malformed-input graceful fallback, stdout purity, camelCase payload compatibility. | Hook execution inside a real host. Phase 2 persistence paths. |
 | [`bin/setup.mjs`](../bin/setup.mjs) | — | 0 | — | Interactive prompts. Non-TTY exit (covered indirectly by CI matrix). |
-| [`bin/install.mjs`](../bin/install.mjs) | install-smoke (CI) | 0 unit | Tarball → `~/.copilot/extensions/...` layout. Re-run idempotency. | Failure path when `COPILOT_HOME` exists but isn't writable. |
-| [`install.sh`](../install.sh) / [`install.ps1`](../install.ps1) | install-smoke (CI) | — | End-to-end install on Linux/macOS, Windows PS 5.1, Windows pwsh 7+ (matches real-world Windows 10/11 default shell). | Air-gapped installs. Behind-corporate-proxy installs. |
+| [`bin/install.mjs`](../bin/install.mjs) | `test/install.test.mjs` + install-smoke (CI) | 2 | Reject unsupported Node before replacing an installation; accept Node 22; preserve saved data; installed layout. | Failure path when `COPILOT_HOME` exists but isn't writable. |
+| [`install.sh`](../install.sh) / [`install.ps1`](../install.ps1) | install-smoke (CI) | — | Runtime rejection before replacement and end-to-end install on Linux/macOS, Windows PS 5.1, Windows pwsh 7+. | Air-gapped installs. Behind-corporate-proxy installs. |
 
-**Total: 234 tests + 4 install-smoke jobs (3 OS × shells).**
+The dependency preflight (`test/lockfile.test.mjs`, 1 test) checks public-registry
+download URLs, absence of URL credentials, and package integrity hashes before
+CI downloads packages.
+
+**Total: 237 tests + 4 install-smoke jobs (3 OS × shells).**
 Two POSIX signal scenarios are skipped on Windows.
 
 ---

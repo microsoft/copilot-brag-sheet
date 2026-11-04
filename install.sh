@@ -20,10 +20,10 @@ echo ""
 
 # ── Checks ───────────────────────────────────────────────────────────────────
 command -v git  &>/dev/null || { echo "Error: git required — install from https://git-scm.com/downloads" >&2; exit 1; }
-command -v node &>/dev/null || { echo "Error: Node.js 18+ required — install from https://nodejs.org" >&2; exit 1; }
+command -v node &>/dev/null || { echo "Error: Node.js 22+ required — install from https://nodejs.org" >&2; exit 1; }
 
 NODE_MAJOR=$(node -e "process.stdout.write(String(process.versions.node.split('.')[0]))")
-[ "$NODE_MAJOR" -ge 18 ] 2>/dev/null || { echo "Error: Node.js 18+ required (found v$(node --version))" >&2; exit 1; }
+[ "$NODE_MAJOR" -ge 22 ] 2>/dev/null || { echo "Error: Node.js 22+ required (found v$(node --version))" >&2; exit 1; }
 
 # ── Install extension files ──────────────────────────────────────────────────
 [ -d "$TARGET_DIR" ] && rm -rf "$TARGET_DIR"

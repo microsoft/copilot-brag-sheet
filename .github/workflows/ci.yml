@@ -6,19 +6,23 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [18, 20, 22]
+        node-version: [22, 24, 26]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node-version }}
-      - run: npm install --no-audit --no-fund
+      - run: node --test test/lockfile.test.mjs
+      - run: npm ci --engine-strict --no-audit --no-fund
       - run: npm test
 
   # End-to-end install smoke test — exercises install.sh / install.ps1 on
@@ -35,7 +39,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 20
+          node-version: 22
+      - name: Reject unsupported Node before replacing an installation
+        shell: bash
+        env:
+          COPILOT_HOME: ${{ runner.temp }}/copilot-home-rejected
+        run: |
+          target="$COPILOT_HOME/extensions/copilot-brag-sheet"
+          mkdir -p "$target"
+          echo "existing installation" > "$target/existing.txt"
+          node() { echo 20; }
+          export -f node
+          if bash ./install.sh > "$RUNNER_TEMP/node-rejection.log" 2>&1; then
+            echo "Installer accepted unsupported Node"; exit 1
+          fi
+          grep -Fq "Node.js 22+ required" "$RUNNER_TEMP/node-rejection.log"
+          grep -Fxq "existing installation" "$target/existing.txt"
       - name: Run install.sh
         shell: bash
         env:
@@ -72,7 +91,24 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 20
+          node-version: 22
+      - name: Reject unsupported Node before replacing an installation
+        shell: powershell
+        env:
+          COPILOT_HOME: ${{ runner.temp }}\copilot-home-rejected
+        run: |
+          $target = Join-Path (Join-Path $env:COPILOT_HOME "extensions") "copilot-brag-sheet"
+          New-Item -ItemType Directory -Force $target | Out-Null
+          $marker = Join-Path $target "existing.txt"
+          Set-Content $marker "existing installation"
+          function node { "20" }
+          try {
+            & .\install.ps1
+            throw "Installer accepted unsupported Node"
+          } catch {
+            if ($_ -notmatch "Node.js 22\+ required") { throw }
+          }
+          if ((Get-Content $marker) -ne "existing installation") { throw "Installation changed" }
       - name: Run install.ps1 in PowerShell 5.1
         shell: powershell
         env:
@@ -98,7 +134,24 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 20
+          node-version: 22
+      - name: Reject unsupported Node before replacing an installation
+        shell: pwsh
+        env:
+          COPILOT_HOME: ${{ runner.temp }}\copilot-home-rejected
+        run: |
+          $target = Join-Path (Join-Path $env:COPILOT_HOME "extensions") "copilot-brag-sheet"
+          New-Item -ItemType Directory -Force $target | Out-Null
+          $marker = Join-Path $target "existing.txt"
+          Set-Content $marker "existing installation"
+          function node { "20" }
+          try {
+            & .\install.ps1
+            throw "Installer accepted unsupported Node"
+          } catch {
+            if ($_ -notmatch "Node.js 22\+ required") { throw }
+          }
+          if ((Get-Content $marker) -ne "existing installation") { throw "Installation changed" }
       - name: Run install.ps1 in pwsh
         shell: pwsh
         env:

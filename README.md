@@ -17,7 +17,7 @@ processes the content you ask it to review.
 
 [Install](#install) · [Example](#a-real-example) · [Quickstart](docs/quickstart.md) · [Website](https://microsoft.github.io/copilot-brag-sheet/)
 
-> **Requires:** Node.js 18+, [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) (with active Copilot subscription)
+> **Requires:** Node.js 22+, [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) (with active Copilot subscription)
 
 ## What it does
 
@@ -572,7 +572,7 @@ and avoid concurrent writes from multiple machines.
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 22+
 - [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli)
 - A host/account approved for the information you process
 

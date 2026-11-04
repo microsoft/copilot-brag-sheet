@@ -36,6 +36,29 @@ the plugin.
 
 ---
 
+## Dependency surface
+
+The native Copilot adapter and `lib/` do not import the MCP SDK or Zod.
+The optional MCP entry point imports those packages and uses
+`StdioServerTransport`; it does not start an HTTP listener, serve static files,
+configure proxy trust, or run an OAuth client. Advisories requiring those HTTP
+features do not, by themselves, establish an exposed endpoint in this project.
+Zod still validates arguments received from the MCP host.
+
+Update affected dependencies even when an advisory describes an unused feature.
+Direct versions are pinned and CI installs the committed lockfile with strict
+Node engine checks. Before downloading packages, CI checks that lockfile URLs
+use public npm without URL credentials and that integrity hashes are present.
+Run `npm audit` when updating the graph; a clean result is
+a point-in-time dependency check, not a guarantee that the application is
+vulnerability-free or approved for a particular data classification.
+
+Revisit transport authentication, request limits, and this threat model before
+adding any HTTP MCP surface. The SDK's HTTP-specific safeguards are not a
+substitute for the existing stdio host trust boundary.
+
+---
+
 ## Threat model
 
 We use a deliberately small STRIDE-lite framing.

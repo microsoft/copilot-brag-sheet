@@ -28,10 +28,10 @@ Write-Host ""
 
 # ── Checks ───────────────────────────────────────────────────────────────────
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Write-Error "git required"; exit 1 }
-if (-not (Get-Command node -ErrorAction SilentlyContinue)) { Write-Error "Node.js 18+ required"; exit 1 }
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) { Write-Error "Node.js 22+ required"; exit 1 }
 
 $nodeMajor = [int](node -e "process.stdout.write(String(process.versions.node.split('.')[0]))")
-if ($nodeMajor -lt 18) { Write-Error "Node.js 18+ required (found v$(node --version))"; exit 1 }
+if ($nodeMajor -lt 22) { Write-Error "Node.js 22+ required (found v$(node --version))"; exit 1 }
 
 # ── Install extension files ──────────────────────────────────────────────────
 if (Test-Path $TargetDir) { Remove-Item $TargetDir -Recurse -Force }

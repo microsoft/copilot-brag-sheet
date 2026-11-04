@@ -37,7 +37,7 @@ That's [`copilot-brag-sheet`](https://github.com/microsoft/copilot-brag-sheet).
 
 ## How it works
 
-Local-first, Node 18+, runs everywhere.
+Local-first, Node 22+, runs on Windows, macOS, and Linux.
 
 ```
 ┌─────────────────┐    hooks     ┌──────────────────┐

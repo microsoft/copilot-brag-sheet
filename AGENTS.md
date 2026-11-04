@@ -119,11 +119,11 @@ truth; Markdown is regenerated.**
 
 ## 3. Build / test / lint commands
 
-This repo has **no build step** (ESM runs directly on Node 18+) and **no
+This repo has **no build step** (ESM runs directly on Node 22+) and **no
 linter configured** today. The full toolbox is `node --test`.
 
 ```bash
-# Run the full suite (ubuntu/macos/windows × Node 18/20/22 in CI)
+# Run the full suite (ubuntu/macos/windows × Node 22/24/26 in CI)
 npm test
 
 # Run a single test file
@@ -149,7 +149,7 @@ $env:COPILOT_HOME = "$env:TEMP\copilot-home-test"
 Get-ChildItem $env:COPILOT_HOME\extensions\copilot-brag-sheet
 ```
 
-**Contributors must run `npm install` before `npm test`** because
+**Contributors must run `npm ci` before `npm test`** because
 `mcp-server.mjs` depends on the MCP SDK and Zod (see §4 conventions).
 The `lib/` modules and `extension.mjs` themselves remain dependency-free;
 only the MCP entry point pulls runtime deps.
@@ -165,6 +165,10 @@ real bug reports). Don't change them without an issue and discussion first.
   two runtime `dependencies`: `@modelcontextprotocol/sdk` (cross-engine
   MCP transport) and `zod` (input/output schema validation in
   `mcp-server.mjs`). Both are required for MCP protocol conformance.
+  Pin direct dependencies to exact reviewed versions; CI uses `npm ci`
+  with strict engine checks to validate the committed dependency graph.
+  Lockfile downloads must use public npm URLs with integrity hashes.
+  CI runs `node --test test/lockfile.test.mjs` before downloading packages.
   `lib/*` and `extension.mjs` remain dependency-free — they MUST NOT
   import either package directly. Any new runtime dependency requires
   an issue, a written rationale, and an update to this section in the
@@ -172,9 +176,9 @@ real bug reports). Don't change them without an issue and discussion first.
 - **ESM only.** `.mjs` everywhere, `"type": "module"` in `package.json`.
   No CommonJS. No transpilation. Use `node:`-prefixed imports
   (`node:fs`, `node:path`, `node:crypto`, `node:child_process`).
-- **Node 18+ baseline.** No optional chaining gymnastics, but also no
-  features newer than what Node 18 LTS supports. Test matrix is
-  18 / 20 / 22.
+- **Node 22+ baseline.** Use APIs available in Node 22. CI covers
+  Node 22 / 24 / 26; installers must reject older runtimes before
+  modifying an existing installation. See #82 for the compatibility change.
 - **Atomic JSON writes.** All disk writes go through
   [`atomicWriteJSON`](lib/storage.mjs) (`open` → `writeFile` → `fsyncSync` →
   `closeSync` → `renameSync`, with `unlinkSync` cleanup on failure).
@@ -216,7 +220,7 @@ real bug reports). Don't change them without an issue and discussion first.
 
 ## 5. Testing strategy
 
-Current state: **234 tests**, run cross-platform in CI. Two POSIX signal
+Current state: **237 tests**, run cross-platform in CI. Two POSIX signal
 scenarios are skipped on Windows, where those signals force termination.
 Counts include the parameterized adapter scenarios:
 
@@ -236,7 +240,9 @@ Counts include the parameterized adapter scenarios:
 | `test/lock.test.mjs` | 7 | Lock acquisition, stale-PID cleanup, contention. |
 | `test/hooks.test.mjs` | 7 | PostToolUse hook subprocess tests: classification including apply_patch, malformed input, stdout purity, camelCase compat. |
 | `test/pack-smoke.test.mjs` | 1 | Tarball validation, install simulation. |
-| **Total** | **234** | |
+| `test/install.test.mjs` | 2 | npm installer runtime rejection before replacement, supported-runtime install, and saved-data preservation. |
+| `test/lockfile.test.mjs` | 1 | Public-registry download URLs, no URL credentials, and required package integrity hashes. |
+| **Total** | **237** | |
 
 **What's covered:**
 

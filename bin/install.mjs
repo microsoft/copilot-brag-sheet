@@ -35,8 +35,8 @@ function bold(s) { return `\x1b[1m${s}\x1b[0m`; }
 
 // ── Preflight ───────────────────────────────────────────────────────────────
 const nodeMajor = Number(process.versions.node.split(".")[0]);
-if (nodeMajor < 18) {
-  console.error(`Node.js 18+ required (found v${process.versions.node})`);
+if (nodeMajor < 22) {
+  console.error(`Node.js 22+ required (found v${process.versions.node})`);
   process.exit(1);
 }
 

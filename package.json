@@ -16,8 +16,8 @@
     "prepublishOnly": "node --test"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "zod": "^4.4.3"
+    "@modelcontextprotocol/sdk": "1.32.0",
+    "zod": "4.6.7"
   },
   "keywords": [
     "copilot",
@@ -38,7 +38,7 @@
     "url": "https://github.com/microsoft/copilot-brag-sheet"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   },
   "peerDependencies": {
     "@github/copilot": ">=1.0.0"

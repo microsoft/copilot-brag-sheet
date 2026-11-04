@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking: Node.js 22+ required** — stop supporting end-of-life Node 18 and 20 so patched runtime dependencies can be used. CI covers Node 22, 24, and 26; all installers reject older runtimes before replacing extension files. Upgrade Node before updating the extension. Saved-record formats and data locations are unchanged. See #82.
+
+### Security
+
+- Pin the MCP SDK to 1.32.0 and Zod to 4.6.7, and refresh their transitive dependencies to address dependency advisories. Keep the native Copilot adapter and core library dependency-free.
+- Validate public-registry lockfile URLs and required integrity hashes before CI downloads dependencies.
+
 ## [1.3.0] — 2026-11-03
 
 ### Added

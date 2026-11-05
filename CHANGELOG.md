@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Security
 
+- Add guarded Dependabot patch merging after complete CI and dependency audit checks. Keep larger upgrades and changes to runtime requirements, dependency sets, or package behavior for maintainer review; automatically dispatch CI after bot merges.
 - Pin the MCP SDK to 1.32.0 and Zod to 4.6.7, and refresh their transitive dependencies to address dependency advisories. Keep the native Copilot adapter and core library dependency-free.
 - Validate public-registry lockfile URLs and required integrity hashes before CI downloads dependencies.
 

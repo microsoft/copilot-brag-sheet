@@ -60,7 +60,13 @@ The dependency preflight (`test/lockfile.test.mjs`, 1 test) checks public-regist
 download URLs, absence of URL credentials, and package integrity hashes before
 CI downloads packages.
 
-**Total: 237 tests + 4 install-smoke jobs (3 OS × shells).**
+Dependency automation adds 36 tests across `test/dependency-policy.test.mjs`
+and `test/dependency-maintenance.test.mjs`. They cover graph eligibility,
+privileged API orchestration with controlled GitHub responses, stale heads,
+protection/check failures, read-only dry runs, and explicit post-merge CI.
+Real GitHub token permissions and event delivery require a deployed dry run.
+
+**Total: 273 tests + 4 install-smoke jobs (3 OS × shells).**
 Two POSIX signal scenarios are skipped on Windows.
 
 ---

@@ -63,6 +63,7 @@ See [`docs/cross-engine-spec.md`](docs/cross-engine-spec.md).
 
 ## Priority 4 — Hardening
 
+- [x] **Guarded dependency patch maintenance** — monitor through Dependabot, automatically merge narrowly scoped patches after complete CI, and escalate other changes. [#85](https://github.com/microsoft/copilot-brag-sheet/issues/85)
 - [ ] **Case-insensitive path dedup** — Windows/macOS file path deduplication
 - [ ] **UNC path handling** — fix `normalizePath` for `\\server\share`
 

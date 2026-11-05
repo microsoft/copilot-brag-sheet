@@ -57,6 +57,18 @@ Revisit transport authentication, request limits, and this threat model before
 adding any HTTP MCP surface. The SDK's HTTP-specific safeguards are not a
 substitute for the existing stdio host trust boundary.
 
+Dependency patch automation runs only trusted default-branch scripts. Its
+privileged job never checks out PR code, installs PR dependencies, or executes
+package scripts; it reads proposed manifests and lockfiles as JSON through the
+GitHub API. The built-in token permits repository merges, PR comments, and
+explicit CI dispatch, without a long-lived credential.
+
+Automatic merges are constrained by a fail-closed dependency policy, exact-head
+checks, passing CI, and up-to-date branch protection. This reduces exposure but
+does not prove a new dependency version is benign. See
+[Dependency maintenance](dependency-maintenance.md) for exclusions and how to
+pause automation.
+
 ---
 
 ## Threat model

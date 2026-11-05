@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
@@ -23,6 +24,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: node --test test/lockfile.test.mjs
       - run: npm ci --engine-strict --no-audit --no-fund
+      - run: npm audit --audit-level=low
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == 22
       - run: npm test
 
   # End-to-end install smoke test — exercises install.sh / install.ps1 on

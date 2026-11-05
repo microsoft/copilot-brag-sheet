@@ -169,6 +169,9 @@ real bug reports). Don't change them without an issue and discussion first.
   with strict engine checks to validate the committed dependency graph.
   Lockfile downloads must use public npm URLs with integrity hashes.
   CI runs `node --test test/lockfile.test.mjs` before downloading packages.
+  Dependency automation follows [`docs/dependency-maintenance.md`](docs/dependency-maintenance.md).
+  Changes to CI job names or runtime matrices must also update its guard and
+  required repository checks; never bypass a failed maintenance gate.
   `lib/*` and `extension.mjs` remain dependency-free — they MUST NOT
   import either package directly. Any new runtime dependency requires
   an issue, a written rationale, and an update to this section in the
@@ -220,7 +223,7 @@ real bug reports). Don't change them without an issue and discussion first.
 
 ## 5. Testing strategy
 
-Current state: **237 tests**, run cross-platform in CI. Two POSIX signal
+Current state: **273 tests**, run cross-platform in CI. Two POSIX signal
 scenarios are skipped on Windows, where those signals force termination.
 Counts include the parameterized adapter scenarios:
 
@@ -242,7 +245,9 @@ Counts include the parameterized adapter scenarios:
 | `test/pack-smoke.test.mjs` | 1 | Tarball validation, install simulation. |
 | `test/install.test.mjs` | 2 | npm installer runtime rejection before replacement, supported-runtime install, and saved-data preservation. |
 | `test/lockfile.test.mjs` | 1 | Public-registry download URLs, no URL credentials, and required package integrity hashes. |
-| **Total** | **237** | |
+| `test/dependency-policy.test.mjs` | 17 | Patch-only graph changes, metadata preservation, public sources, and manifest/lock agreement. |
+| `test/dependency-maintenance.test.mjs` | 19 | Bot provenance, exact-head merge gating, complete CI/protection checks, dry-run safety, escalation, and post-merge dispatch/recovery. |
+| **Total** | **273** | |
 
 **What's covered:**
 

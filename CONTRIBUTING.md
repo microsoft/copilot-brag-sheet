@@ -99,6 +99,11 @@ These are intentional constraints — please don't change them without discussio
 
 ## Release Process
 
+Dependency patch PRs may merge automatically under the
+[dependency maintenance policy](docs/dependency-maintenance.md). Other changes
+remain subject to maintainer review. Automated patch maintenance does not
+publish releases.
+
 This project uses [Semantic Versioning](https://semver.org/) and automated GitHub Releases.
 
 ### To release a new version:

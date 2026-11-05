@@ -1,0 +1,46 @@
+name: Dependency patch maintenance
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: "PR number to inspect (read-only; never merges)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-maintenance-${{ github.event.workflow_run.head_branch || inputs.pull_request }}
+  cancel-in-progress: false
+
+jobs:
+  maintain:
+    if: >-
+      github.repository == 'microsoft/copilot-brag-sheet' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' &&
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/') &&
+      github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Evaluate and maintain dependency PR
+        run: node .github/scripts/dependency-maintenance.mjs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

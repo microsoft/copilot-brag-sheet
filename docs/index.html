@@ -281,6 +281,23 @@
         margin: 0 0 32px;
       }
 
+      .demo-frame { margin: 0; }
+      .demo-frame video {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg);
+      }
+      .demo-frame figcaption {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .demo-walkthrough { margin-top: 24px; }
+      .demo-walkthrough summary { cursor: pointer; }
+
       /* Install cards */
       .install-card {
         background: var(--bg-elevated);
@@ -408,12 +425,19 @@
     <header class="nav">
       <div class="wrap nav-inner">
         <div class="brand">
-          <span class="mark">⚑</span>
+          <span class="mark" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" focusable="false">
+              <path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" />
+              <path d="M7 6H4v2a4 4 0 0 0 4 4M17 6h3v2a4 4 0 0 1-4 4M12 14v7M8 21h8" />
+            </svg>
+          </span>
           <span>copilot-brag-sheet</span>
         </div>
         <nav class="nav-links" aria-label="Main navigation">
           <a href="#install">Install</a>
-          <a href="#demo">Example</a>
+          <a href="#demo">Demo</a>
           <a href="#review">Review prep</a>
           <a href="#privacy">Privacy</a>
           <a href="https://github.com/microsoft/copilot-brag-sheet">GitHub ↗</a>
@@ -442,12 +466,40 @@
           </div>
           <div class="cta-row">
             <a class="btn btn-primary" href="#install">Install the plugin</a>
-            <a class="btn btn-secondary" href="#demo">See an example</a>
+            <a class="btn btn-secondary" href="#demo">Watch the demo</a>
           </div>
         </div>
       </section>
 
       <section id="demo">
+        <div class="wrap">
+          <h2>Save it now. Review it later.</h2>
+          <p class="lede">Add an accomplishment in Copilot CLI, then ask for a summary of your recent work.</p>
+          <figure class="demo-frame">
+            <video controls playsinline preload="metadata" width="1200" height="675"
+              poster="demo-poster.png" aria-label="Illustrated demo of saving and reviewing accomplishments"
+              aria-describedby="demo-caption">
+              <source src="https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/demo/demo.mp4" type="video/mp4" />
+              <a href="https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/demo/demo.mp4">Download the demo video (MP4)</a>.
+            </video>
+            <figcaption id="demo-caption">
+              Illustrative animation with fictional work and metrics; CLI appearance may differ.
+              <a href="https://raw.githubusercontent.com/microsoft/copilot-brag-sheet/main/demo/demo.mp4">Open the video directly</a>.
+            </figcaption>
+          </figure>
+          <details class="demo-walkthrough">
+            <summary>Read the demo walkthrough</summary>
+            <ol class="steps">
+              <li>In Copilot CLI, the developer types <code>brag — fixed cascading timeout in api-gateway</code>.</li>
+              <li>Copilot calls <code>save_to_brag_sheet</code> with a bug-fix summary, category, and impact, then confirms the entry was saved.</li>
+              <li>The developer asks <code>what did I ship the last 2 weeks?</code>. Copilot calls <code>review_brag_sheet</code>.</li>
+              <li>The review groups fictional examples of feature work, bug fixes, infrastructure changes, and collaboration by week and category.</li>
+            </ol>
+          </details>
+        </div>
+      </section>
+
+      <section id="example">
         <div class="wrap">
           <h2>More useful than "worked on the plugin"</h2>
           <p class="lede">A note based on this project's

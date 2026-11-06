@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Changed
 
+- Replace the landing-page flag mark with a trophy icon while preserving the existing badge colors and wordmark.
+- Restore the illustrative landing-page demo with playback controls, a still preview, and a text walkthrough. Keep the sourced real-work example alongside it and distinguish fictional demo data from actual results.
 - **Breaking: Node.js 22+ required** — stop supporting end-of-life Node 18 and 20 so patched runtime dependencies can be used. CI covers Node 22, 24, and 26; all installers reject older runtimes before replacing extension files. Upgrade Node before updating the extension. Saved-record formats and data locations are unchanged. See #82.
 
 ### Security

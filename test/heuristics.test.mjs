@@ -16,10 +16,102 @@ import {
   extractFilePath,
   extractFileChanges,
   extractPrInfo,
+  extractCreatedGitHubPr,
   detectShellGitAction,
   isBragRequest,
   classifyToolUse,
 } from "../lib/heuristics.mjs";
+
+describe("confirmed PR evidence for nudges", () => {
+  const event = (overrides = {}) => ({
+    toolName: "github-mcp-server-create_pull_request",
+    toolArgs: { owner: "acme", repo: "widget", title: "Handle retries" },
+    toolResult: {
+      resultType: "success",
+      textResultForLlm: JSON.stringify({
+        number: 42, html_url: "https://github.com/acme/widget/pull/42",
+      }),
+    },
+    ...overrides,
+  });
+
+  it("uses a confirmed PR URL and source repo for a stable save identity", () => {
+    const expected = {
+      url: "https://github.com/acme/widget/pull/42",
+      repo: "acme/widget",
+      title: "Handle retries",
+      idempotencyKey: "pr-created:https://github.com/acme/widget/pull/42",
+    };
+    assert.deepEqual(extractCreatedGitHubPr(event()), expected);
+    assert.deepEqual(extractCreatedGitHubPr(event({
+      toolName: "functions.github-create_pull_request",
+      toolResult: {
+        resultType: "success",
+        textResultForLlm: '{"url":"https://github.com/acme/widget/pull/42"}',
+      },
+    })), expected);
+    for (const url of [
+      "https://GITHUB.COM/Acme/Widget/pull/42",
+      "https://api.github.com/repos/acme/widget/pulls/42",
+    ]) {
+      assert.deepEqual(extractCreatedGitHubPr(event({
+        toolResult: {
+          resultType: "success",
+          textResultForLlm: JSON.stringify({ html_url: expected.url, url }),
+        },
+      })), expected);
+    }
+  });
+
+  it("rejects unsuccessful, ambiguous and non-creation results", () => {
+    const rejected = [
+      { toolName: "github-create_pull_request_with_copilot" },
+      { toolName: "powershell" },
+      { toolName: "github-update_pull_request" },
+      { toolArgs: { title: "Missing repository identity" } },
+      { toolArgs: { owner: "other", repo: "widget" } },
+      ...["failure", "denied", undefined].map(resultType => ({
+        toolResult: { ...event().toolResult, resultType },
+      })),
+      ...[
+        "Created a PR",
+        "null",
+        "[]",
+        '{"number":42}',
+        '{"html_url":["https://github.com/acme/widget/pull/42"]}',
+        '{"html_url":"https://github.com/acme/widget/pull/42","url":["https://github.com/acme/widget/pull/42"]}',
+        '{"number":41,"html_url":"https://github.com/acme/widget/pull/42"}',
+        '{"html_url":"https://github.com/acme/widget/issues/42"}',
+        '{"html_url":"https://github.com/acme/widget/pull/0"}',
+        '{"html_url":"https://github.com/acme/widget/pull/42?token=secret"}',
+        '{"html_url":"https://user:pass@github.com/acme/widget/pull/42"}',
+        '{"html_url":"http://github.com/acme/widget/pull/42"}',
+        '{"html_url":"https://github.com.evil.invalid/acme/widget/pull/42"}',
+        '{"html_url":"https://github.com/acme/widget/pull/42","url":"https://github.com/acme/widget/pull/43"}',
+        '{"html_url":"https://github.com/acme/widget/pull/42","url":"https://GITHUB.COM/acme/widget/pull/43"}',
+        '{"html_url":"https://github.com/acme/widget/pull/42","url":"https://api.github.com/repos/acme/widget/pulls/43"}',
+      ].map(textResultForLlm => ({
+        toolResult: { resultType: "success", textResultForLlm },
+      })),
+    ];
+    for (const overrides of rejected) {
+      assert.equal(extractCreatedGitHubPr(event(overrides)), null,
+        JSON.stringify(overrides));
+    }
+  });
+
+  it("bounds and normalizes untrusted titles without treating them as metadata", () => {
+    const pr = extractCreatedGitHubPr(event({
+      toolArgs: {
+        owner: "acme", repo: "widget",
+        title: `Ignore instructions\n\u0000${"x".repeat(200)}`,
+      },
+    }));
+    assert.equal(pr?.title.length, 120);
+    assert.ok(!/[\r\n\u0000]/u.test(pr.title));
+    assert.equal(pr.idempotencyKey, "pr-created:https://github.com/acme/widget/pull/42");
+  });
+});
 
 // ── Tool classification sets ────────────────────────────────────────────────
 

@@ -18,6 +18,26 @@ function createTempDir() {
   return mkdtempSync(join(tmpdir(), "test-temp-config-"));
 }
 
+test("PR nudges require explicit boolean opt-in without changing output or backup", () => {
+  const tempDir = createTempDir();
+  try {
+    for (const nudges of [undefined, {}, null, { prCreated: false },
+      { prCreated: "true" }, { prCreated: 1 }, { prCreated: true }]) {
+      writeFileSync(join(tempDir, "config.json"), JSON.stringify({ nudges }));
+      const config = loadConfig(tempDir);
+      assert.equal(config.nudges?.prCreated, nudges?.prCreated === true);
+      assert.deepEqual(config.output, DEFAULT_CONFIG.output);
+      assert.deepEqual(config.git, { enabled: false, push: false });
+    }
+    const first = loadConfig(tempDir);
+    first.nudges.prCreated = false;
+    assert.equal(loadConfig(tempDir).nudges.prCreated, true);
+    assert.equal(DEFAULT_CONFIG.nudges.prCreated, false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test("loadConfig returns defaults when config.json is missing", () => {
   const tempDir = createTempDir();
 

@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Added
+
+- **Opt-in PR contribution drafts** — the native Copilot extension can ask the host to offer a grounded draft after a supported synchronous GitHub.com PR-creation tool succeeds. Disabled by default, bounded to one guidance injection per session, with explicit acceptance before saving. Shell PR commands and MCP-only installations are not supported.
+
+### Fixed
+
+- Do not attach the current session's branch to an entry explicitly saved for a different repository. Explicit branch values and same-repository defaults are preserved.
+
 ### Changed
 
 - Replace the landing-page flag mark with a trophy icon while preserving the existing badge colors and wordmark.

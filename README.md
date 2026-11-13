@@ -364,6 +364,9 @@ Place a `config.json` in your data directory to customize:
   "output": {
     "includeSessionLog": true
   },
+  "nudges": {
+    "prCreated": false
+  },
   "git": {
     "enabled": false,
     "push": false
@@ -376,9 +379,34 @@ Place a `config.json` in your data directory to customize:
 | `categories` | array | Custom categories **added** to the built-in set |
 | `output.includeSessionLog` | boolean | Include raw session activity table in work log |
 | `output.defaultFormat` | string | Output format for entries (default: `"bullets"`) |
+| `nudges.prCreated` | boolean | Opt in to PR contribution draft suggestions in the native Copilot extension (default: `false`) |
 | `git.enabled` | boolean | Enable local git history for data directory |
 | `git.push` | boolean | Auto-push to a remote git repo |
 | `preset` | string | Optional context preset; currently `"microsoft"`. It does not connect to other services. |
+
+### Optional PR contribution drafts
+
+Set `"nudges": { "prCreated": true }` in your data directory's `config.json`,
+then start a new Copilot CLI session with the extension enabled. After a
+supported PR-creation tool succeeds, the extension asks the host to offer a
+brief contribution draft with its PR link and **Save / Edit / Skip** choices.
+The draft must not treat opening a PR as proof of shipping or measured impact.
+Accept the draft to save it; editing alone, skipping, or silence does not save
+a contribution entry.
+
+This first version recognizes synchronous `create_pull_request` tools that
+return a JSON object with a matching GitHub.com PR URL. Existing session capture
+must also recognize the PR: a title in the tool arguments or a PR number in the
+result. It does not recognize
+shell commands such as `gh pr create`, asynchronous PR jobs, GitHub Enterprise,
+or PRs opened outside the session. MCP-only installations do not provide this
+hook.
+
+The extension sends guidance at most once per session, including resumes.
+The host decides how to present it and may omit it; these are conversational
+choices, not buttons or an enforceable approval dialog. Normal automatic session
+capture and optional backup are unchanged. Retrying an accepted draft uses the
+same source key to avoid duplicates; it does not edit an already saved entry.
 
 ### Built-in Categories
 

@@ -66,6 +66,105 @@ const jsonFiles = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap(ent
 });
 
 switch (process.argv[2]) {
+  case "save-source-metadata": {
+    execFileSync("git", ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+      "-c", "commit.gpgsign=false", "commit", "--allow-empty", "--quiet", "-m", "Fixture"],
+    { cwd: workspace, stdio: "pipe" });
+    await start();
+    const branch = record().branch;
+    assert.ok(branch);
+    for (const [summary, source, expectedBranch] of [
+      ["Foreign PR", { repo: "acme/widget" }, null],
+      ["Current repository", {}, branch],
+      ["Explicit current repository", { repo: "owner/adapter" }, branch],
+      ["Case-normalized current repository", { repo: "OWNER/ADAPTER" }, branch],
+      ["Explicit PR branch", { repo: "acme/widget", branch: "retry-fix" }, "retry-fix"],
+    ]) {
+      await tool("save_to_brag_sheet", { summary, ...source });
+      const saved = readRecords(dataDir, { type: "entry" }).find(entry => entry.summary === summary);
+      assert.equal(saved.branch, expectedBranch, summary);
+    }
+    noErrors();
+    break;
+  }
+  case "pr-nudge":
+  case "pr-nudge-disabled":
+  case "pr-nudge-resume":
+  case "pr-nudge-resume-seed":
+  case "pr-nudge-uncaptured-seed":
+  case "pr-nudge-uncaptured-resume":
+  case "pr-nudge-resume-from-disk": {
+    const scenario = process.argv[2];
+    const createPr = (overrides = {}) => hook("onPostToolUse", {
+      toolName: "github-mcp-server-create_pull_request",
+      toolArgs: { owner: "acme", repo: "widget", title: "Handle retries" },
+      toolResult: {
+        resultType: "success",
+        textResultForLlm: '{"number":42,"html_url":"https://github.com/acme/widget/pull/42"}',
+      },
+      ...overrides,
+    });
+    await start({ source: scenario === "pr-nudge-resume-from-disk"
+      || scenario === "pr-nudge-uncaptured-resume" ? "resume" : "startup" });
+    if (scenario.startsWith("pr-nudge-uncaptured-")) {
+      assert.equal(await createPr({
+        toolArgs: { owner: "acme", repo: "widget" },
+        toolResult: {
+          resultType: "success",
+          textResultForLlm: '{"url":"https://github.com/acme/widget/pull/42","title":"Handle retries"}',
+        },
+      }), undefined, "do not offer evidence that cannot suppress a later resumed offer");
+      assert.equal(record().prsCreated.length, 0);
+      noErrors();
+      break;
+    }
+    if (scenario === "pr-nudge-resume-from-disk") {
+      assert.equal(await createPr(), undefined);
+      assert.equal(readRecords(dataDir, { type: "entry" }).length, 0);
+      break;
+    }
+    if (scenario === "pr-nudge") {
+      assert.equal(await createPr({ sessionId: childId }), undefined);
+      assert.equal(await createPr({ toolResult: { resultType: "failure" } }), undefined);
+      assert.equal(await edit("ordinary-edit.mjs"), undefined);
+    }
+    const results = await Promise.all([createPr(), createPr()]);
+    const guidance = results.filter(result => result?.additionalContext);
+    assert.equal(guidance.length, scenario === "pr-nudge-disabled" ? 0 : 1);
+    assert.equal(record().prsCreated.length, 1, "nudge does not change automatic capture");
+    assert.equal(readRecords(dataDir, { type: "entry" }).length, 0, "a nudge must not save an entry");
+    assert.equal(existsSync(path.join(dataDir, "work-log.md")), false);
+    assert.equal(await createPr(), undefined, "silence must not produce another offer");
+    if (scenario === "pr-nudge-resume") {
+      await hook("onSessionEnd", { reason: "complete" });
+      await start({ source: "resume" });
+      assert.equal(await createPr(), undefined);
+    }
+    if (scenario === "pr-nudge") {
+      const context = guidance[0].additionalContext;
+      assert.ok(context.length < 2200);
+      const evidence = JSON.parse(context.split("\n").at(-1));
+      assert.deepEqual(evidence, {
+        url: "https://github.com/acme/widget/pull/42",
+        repo: "acme/widget",
+        title: "Handle retries",
+        idempotencyKey: "pr-created:https://github.com/acme/widget/pull/42",
+      });
+      const args = {
+        summary: `Opened a PR proposing retry handling: ${evidence.url}`,
+        category: "pr", repo: evidence.repo, idempotencyKey: evidence.idempotencyKey,
+      };
+      await tool("save_to_brag_sheet", args);
+      await tool("save_to_brag_sheet", args);
+      const entries = readRecords(dataDir, { type: "entry" });
+      assert.equal(entries.length, 1);
+      assert.equal(entries[0].repo, "acme/widget");
+      assert.equal(entries[0].summary, args.summary);
+      assert.equal(existsSync(path.join(dataDir, "work-log.md")), false);
+    }
+    noErrors();
+    break;
+  }
   case "process-exit":
   case "natural-exit":
   case "host-disconnect":

@@ -2,7 +2,7 @@
 
 Prioritized by impact ÷ effort. Contributions welcome — open an issue to discuss.
 
-> **Last updated:** 2026-11-09.
+> **Last updated:** 2026-11-13.
 
 ## Product direction
 
@@ -16,7 +16,7 @@ missing context. Recorded activity does not by itself establish impact.
 | Capability | Available today | Direction to evaluate |
 | --- | --- | --- |
 | Automatic activity capture | Supported native Copilot CLI session, file, PR and git events | Useful milestone prompts; explicit capture scope and retained-field controls |
-| AI-assisted descriptions | Host-assisted explicit saves; captured task/session descriptions | Short, grounded draft offers at meaningful moments, without a separate model service |
+| AI-assisted descriptions | Host-assisted saves, opt-in PR contribution drafts, and captured task/session descriptions | Evaluate other meaningful milestones without a separate model service |
 | Durable contributions | Local JSON entries, atomic writes and keyed retry deduplication | Explicit correction/deletion workflows and reconciliation that preserves user decisions |
 | Evidence | PR references and file activity in session records | Contribution-linked evidence; optional user-selected attachments |
 | Review and export | Markdown review and generated work logs; configurable session visibility | Useful first review, related-work grouping, additional export formats and optional visual reports |
@@ -48,10 +48,10 @@ sources and broader inference remain candidates, not an implementation queue.
 ## Priority 0 — Product completeness & distribution
 
 Automatic activity capture is implemented, but captured activity is not the same
-as a saved contribution or verified impact. The immediate focus is a small
-milestone prompt that makes existing capture useful without daily bookkeeping.
+as a saved contribution or verified impact. The first bounded milestone is an
+opt-in PR contribution draft; broader capture and review work remain separate.
 
-- [ ] **PR milestone nudge** — offer a grounded draft after a confirmed supported PR creation, with explicit acceptance, duplicate suppression and an opt-out. Verify delivery through the native host before release; do not add background inference.
+- [x] **Opt-in PR milestone nudge** — bounded native-host guidance for a grounded draft after supported GitHub PR creation, with conversational acceptance and resume suppression. Synthetic interactive-host delivery is verified; presentation remains best effort. Shell PR commands are not supported. See [configuration and limitations](README.md#optional-pr-contribution-drafts).
 - [ ] **First-review usefulness** — make existing captured activity discoverable during review, distinguish it from saved contributions, and guide evidence-backed drafting. Respect explicit visibility choices; do not add capture sources or change export and backup defaults.
 - [ ] **Broader summary inference** — after validating the bounded PR nudge and first-review experience, evaluate other significant work boundaries. Distinguish observed activity from confirmed outcomes and leave unsupported impact unknown. [#7](https://github.com/microsoft/copilot-brag-sheet/issues/7)
 - [x] **Capture reliability** — align with current Copilot SDK hook payloads, track `apply_patch`, preserve resumed sessions, isolate subagent lifecycle events, expose capture health, and make entry retries idempotent.

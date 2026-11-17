@@ -23,7 +23,13 @@ const scenarios = [
   "compaction",
   "tools",
   "plugin-tools",
+  "save-source-metadata",
   "concurrent-hooks",
+  "pr-nudge",
+  "pr-nudge-disabled",
+  "pr-nudge-resume",
+  "pr-nudge-resume-from-disk",
+  "pr-nudge-uncaptured-resume",
   "shutdown-during-hooks",
   "process-exit",
   "natural-exit",
@@ -65,7 +71,11 @@ for (const scenario of scenarios) {
         exports: { "./extension": "./extension.mjs" },
       }));
       writeFileSync(path.join(scratch, "data", "config.json"),
-        JSON.stringify({ git: { enabled: false, push: false } }));
+        JSON.stringify({
+          git: { enabled: false, push: false },
+          nudges: { prCreated: scenario.startsWith("pr-nudge")
+            && scenario !== "pr-nudge-disabled" },
+        }));
 
       const env = { ...process.env };
       for (const key of Object.keys(env)) {
@@ -82,7 +92,11 @@ for (const scenario of scenarios) {
         GIT_TERMINAL_PROMPT: "0",
       });
       const phases = scenario === "resume-from-disk"
-        ? ["resume-from-disk-seed", scenario] : [scenario];
+        ? ["resume-from-disk-seed", scenario]
+        : scenario === "pr-nudge-resume-from-disk"
+          ? ["pr-nudge-resume-seed", scenario]
+          : scenario === "pr-nudge-uncaptured-resume"
+            ? ["pr-nudge-uncaptured-seed", scenario] : [scenario];
       for (const phase of phases) {
         const execution = exec(process.execPath,
           [path.join(scratch, "host.mjs"), phase],

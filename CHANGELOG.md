@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Added
+
+- **Opt-in PR contribution drafts** — the native Copilot extension can ask the host to offer a grounded draft after a supported synchronous GitHub.com PR-creation tool succeeds. Disabled by default, bounded to one guidance injection per session, with explicit acceptance before saving. Shell PR commands and MCP-only installations are not supported.
+
+### Fixed
+
+- Do not attach the current session's branch to an entry explicitly saved for a different repository. Explicit branch values and same-repository defaults are preserved.
+
 ### Changed
 
 - Replace the landing-page flag mark with a trophy icon while preserving the existing badge colors and wordmark.
@@ -14,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Security
 
+- Update the transitive Hono and Node server adapter dependencies to patched versions, combining the compatible updates proposed in #89 and #90 so the dependency audit can pass without an exception.
 - Add guarded Dependabot patch merging after complete CI and dependency audit checks. Keep larger upgrades and changes to runtime requirements, dependency sets, or package behavior for maintainer review; automatically dispatch CI after bot merges.
 - Pin the MCP SDK to 1.32.0 and Zod to 4.6.7, and refresh their transitive dependencies to address dependency advisories. Keep the native Copilot adapter and core library dependency-free.
 - Validate public-registry lockfile URLs and required integrity hashes before CI downloads dependencies.

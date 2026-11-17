@@ -131,8 +131,8 @@ We use a deliberately small STRIDE-lite framing.
                                               ┌──────────────────────┐
                                               │  git commit / push   │  ← lib/git-backup.mjs
                                               │  (sessions/* git-    │
-                                              │   ignored — only     │
-                                              │   entries pushed)    │
+                                              │   ignored; other     │
+                                              │   files eligible)    │
                                               └──────────────────────┘
 ```
 
@@ -140,8 +140,30 @@ We use a deliberately small STRIDE-lite framing.
 
 1. **LLM tool args → `sanitize()`** — never trust free-form text. Reserved markers, pipes, leading `#`, length all filtered.
 2. **`sanitize()`'d data → atomic write** — content is now structurally safe; durability is now the OS's problem and we use `fsync`.
-3. **Disk → optional git** — entries dir only; sessions are in `.gitignore` to prevent noise *and* to reduce the surface area of what gets pushed remotely (defense in depth even though sessions don't normally contain secrets).
+3. **Disk → optional git** — non-ignored files are staged, including entries, configuration, and generated work logs. Raw sessions are in `.gitignore`, but generated Markdown can still contain session-derived text. Session-file exclusion is not a sensitive-data boundary.
 4. **Git → user-chosen remote** — outside our trust boundary entirely. Users pick GitHub, ADO, self-hosted, whatever.
+
+### Optional PR contribution guidance
+
+`nudges.prCreated` defaults to `false`. When enabled, the native adapter can
+return a bounded `additionalContext` string to the current AI host after a
+successful synchronous PR-creation tool result. It contains the validated
+GitHub.com PR URL, repository, a title capped at 120 characters, and a stable
+save key. It does not fetch the PR or make a separate model request.
+
+The title remains untrusted source data, not an instruction. URL validation
+confirms the result's shape and repository match, not its authenticity, the
+user's authorship, deployment, or impact. Guidance asks the host to use only
+source evidence and corroborated conversation facts, and to wait for explicit
+acceptance before calling the existing save tool. Editing alone is not consent
+to save. This is model-mediated behavior, not a separate authorization check:
+the host may omit or repeat an offer, or disregard the guidance.
+
+The hook itself creates no contribution entry and changes no retention or
+backup setting. Skipping a draft does not disable normal session capture or
+remove existing records. An accepted draft follows the existing sanitization,
+storage, and optional backup path. The stable key prevents duplicate retries;
+it does not implement editing or deletion of a saved entry.
 
 ---
 
